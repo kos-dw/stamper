@@ -1,0 +1,32 @@
+{
+  "name": "stamper",
+  "version": "0.0.0",
+  "description": "",
+  "main": "src/index.esm.ts",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:serve\" \"npm run dev:css\" \"npm run dev:build\"",
+    "dev:serve": "reload -b -d public",
+    "dev:build": "esbuild src/index.esm.ts --bundle --format=esm --outdir=public/js --watch",
+    "dev:css": "tailwindcss -i src/styles/tailwind.css -o public/css/style.css --watch",
+    "build": "esbuild src/index.esm.ts --bundle --format=esm --outdir=dist",
+    "preinstall": "typesync || :",
+    "prepare": "husky"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.10.0",
+    "@types/eslint__js": "~8.42.3",
+    "@types/node": "^22.5.5",
+    "@types/reload": "~3.2.3",
+    "concurrently": "^9.0.1",
+    "esbuild": "0.24.0",
+    "eslint": "^9.10.0",
+    "globals": "^15.9.0",
+    "husky": "^9.1.7",
+    "reload": "^3.3.0",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.2",
+    "typesync": "^0.13.0"
+  }
+}
