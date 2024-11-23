@@ -9,7 +9,8 @@
     "dev:build": "esbuild src/index.esm.ts --bundle --format=esm --outdir=public/js --watch",
     "dev:css": "tailwindcss -i src/styles/tailwind.css -o public/css/style.css --watch",
     "build": "esbuild src/index.esm.ts --bundle --format=esm --outdir=dist",
-    "preinstall": "typesync || :"
+    "preinstall": "typesync || :",
+    "prepare": "husky"
   },
   "author": "",
   "license": "ISC",
@@ -22,6 +23,7 @@
     "esbuild": "0.24.0",
     "eslint": "^9.10.0",
     "globals": "^15.9.0",
+    "husky": "^9.1.7",
     "reload": "^3.3.0",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.6.2",

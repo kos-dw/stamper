@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "Running build before committing..."
+
+# npm run build を実行
+npm run build
+
+# ビルドに失敗したらコミットを中断
+if [ $? -ne 0 ]; then
+  echo "Build failed. Aborting commit."
+  exit 1
+fi
+
+echo "Build succeeded. Proceeding with commit."
