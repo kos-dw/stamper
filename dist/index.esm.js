@@ -6,8 +6,28 @@ var DIRECTIVE_VALUES = {
   delete: "s-delete",
   index: "s-index",
   sequence: "s-sequence",
-  slot: "s-slot"
+  slot: "s-slot",
+  preAdd: "s-preAdd",
+  postAdd: "s-postAdd",
+  preDelete: "s-preDelete",
+  postDelete: "s-postDelete"
 };
+var NOT_ALLOWED_PATTERNS = [
+  /\bfunction\b/,
+  /\bnew\b/,
+  /\beval\b/,
+  /\blocalStorage\b/,
+  /\bsessionStorage\b/,
+  /\bXMLHttpRequest\b/,
+  /\bfetch\b/,
+  /\bsetTimeout\b/,
+  /\bsetInterval\b/,
+  /\bPromise\b/,
+  /\basync\b/,
+  /\bawait\b/,
+  /\bimport\b/,
+  /\bexport\b/
+];
 
 // src/errors/index.ts
 var StamperError = class extends Error {
@@ -25,7 +45,7 @@ ${stackLine}`);
 
 // src/Stamper.ts
 var Stamper = class {
-  stamperArea;
+  rootEl;
   tempEl;
   castEl;
   crateEl;
@@ -34,15 +54,20 @@ var Stamper = class {
   /**
    * Stamperのインスタンスを作成します。
    * @param {Object} params - コンストラクタのパラメータ。
-   * @param {HTMLElement} params.stamperArea - 使用するスタンパーエリア。
+   * @param {HTMLElement} params.rootEl - 使用するスタンパーエリア。
    */
-  constructor({ stamperArea }) {
-    this.stamperArea = stamperArea;
+  constructor({ rootEl }) {
+    this.rootEl = rootEl;
     this.currentIndex = 0;
     this.tempEl = null;
     this.castEl = null;
     this.crateEl = null;
-    this.callback = () => {
+    this.callback = {
+      postInit: null,
+      preAdd: null,
+      postAdd: null,
+      preDelete: null,
+      postDelete: null
     };
   }
   /**
@@ -66,7 +91,7 @@ var Stamper = class {
    */
   queryElement(directive, identifier) {
     if (!identifier) throw new StamperError("Missing identifier.");
-    const element = this.stamperArea.querySelector(
+    const element = this.rootEl.querySelector(
       `[${directive}="${identifier}"]`
     );
     if (!element) throw new StamperError(`Missing element. [${directive}]`);
@@ -85,19 +110,53 @@ var Stamper = class {
     }
     this.castEl.addEventListener("click", (event) => {
       try {
+        const preAdd = this.castEl.getAttribute(
+          DIRECTIVE_VALUES.preAdd
+        );
+        const postAdd = this.castEl.getAttribute(
+          DIRECTIVE_VALUES.postAdd
+        );
         const fragment = this.createFragment();
         this.addIndex(fragment);
         const children = Array.from(fragment.children);
+        if (preAdd) {
+          this.createFunction(preAdd, [
+            "rootEl",
+            "tempEl",
+            "castEl",
+            "crateEl",
+            "event"
+          ])(
+            this.rootEl,
+            this.tempEl,
+            this.castEl,
+            this.crateEl,
+            event
+          );
+        }
         if (!this.crateEl)
           throw new StamperError(
             `Missing elements. [${DIRECTIVE_VALUES.crate}]`
           );
         this.crateEl.appendChild(fragment);
-        if (this.callback) {
-          this.callback(children);
+        if (postAdd) {
+          this.createFunction(postAdd, [
+            "rootEl",
+            "tempEl",
+            "castEl",
+            "crateEl",
+            "event"
+          ])(
+            this.rootEl,
+            this.tempEl,
+            this.castEl,
+            this.crateEl,
+            event
+          );
         }
         this.setupDeleteEvent(children);
         this.currentIndex++;
+        if (this.callback.postInit) this.callback.postInit(children);
       } catch (error) {
         this.handleError(error);
       }
@@ -125,11 +184,39 @@ var Stamper = class {
         if (!(event.currentTarget instanceof HTMLButtonElement))
           throw new StamperError("Invalid element.");
         const ariaLabel = event.currentTarget.getAttribute("aria-label") || "Delete element";
+        const preDelete = event.currentTarget.getAttribute(
+          DIRECTIVE_VALUES.preDelete
+        );
+        const postDelete = event.currentTarget.getAttribute(
+          DIRECTIVE_VALUES.postDelete
+        );
         if (window.confirm(`\u4EE5\u4E0B\u306E\u51E6\u7406\u3092\u5B9F\u884C\u3057\u307E\u3059
 - ${ariaLabel}`)) {
+          const keys = [
+            "rootEl",
+            "tempEl",
+            "castEl",
+            "crateEl",
+            "children",
+            "event"
+          ];
+          const values = [
+            this.rootEl,
+            this.tempEl,
+            this.castEl,
+            this.crateEl,
+            children,
+            event
+          ];
+          if (preDelete) {
+            this.createFunction(preDelete, keys)(...values);
+          }
           children.forEach((child) => {
             child.remove();
           });
+          if (postDelete) {
+            this.createFunction(postDelete, keys)(...values);
+          }
         }
       });
     }
@@ -244,7 +331,7 @@ var Stamper = class {
    */
   init() {
     try {
-      const identifier = this.stamperArea.getAttribute("stamper");
+      const identifier = this.rootEl.getAttribute("stamper");
       const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, identifier);
       if (tempEl instanceof HTMLTemplateElement) {
         this.tempEl = tempEl;
@@ -268,7 +355,7 @@ var Stamper = class {
    * @param {Function} callback - コールバック関数。
    */
   addCallback(callback) {
-    this.callback = callback;
+    this.callback = { ...this.callback, postInit: callback };
   }
   /**
    * 提供されたデータでスロットを埋めてアイテムを追加します。
@@ -280,10 +367,32 @@ var Stamper = class {
       this.validateTemplateAndCast();
       const fragment = this.createFragment();
       this.populateSlots(fragment, data);
+      const children = Array.from(fragment.children);
       this.castEl.before(fragment);
+      this.setupDeleteEvent(children);
     } catch (error) {
       this.handleError(error);
     }
+  }
+  /**
+   * コールバックを設定します。
+   * @param {Object} callbacks - コールバック関数のオブジェクト。
+   */
+  addCallbacks(callbacks) {
+    this.callback = { ...this.callback, ...callbacks };
+  }
+  /**
+   * コード文字列から関数を生成します。
+   * @param {string} code - 関数のコード文字列。
+   * @param {string[]} [params=[]] - 関数のパラメータ。
+   * @returns {Function} 生成された関数。
+   * @throws {StamperError} コードが見つからない場合、または許可されていないパターンが含まれている場合。
+   */
+  createFunction(code, params = []) {
+    if (!code) throw new StamperError("code is not found");
+    if (NOT_ALLOWED_PATTERNS.some((pattern) => pattern.test(code)))
+      throw new StamperError("Binder is not work");
+    return new Function(...params, `${code}`);
   }
 };
 export {

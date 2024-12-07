@@ -13,6 +13,8 @@ Stamper は、指定されたテンプレートを使用して動的に要素を
         <button
             type="button"
             s-delete="mock"
+            s-preDelete='console.log("preDelete")'
+            s-postDelete='console.log("postDelete")'
             class="bg-red-700 w-36 p-1 text-white text-center"
         >
             削除
@@ -22,6 +24,8 @@ Stamper は、指定されたテンプレートを使用して動的に要素を
     <button
         type="button"
         s-cast="mock"
+        s-preAdd='console.log("preAdd")'
+        s-postAdd='console.log("postAdd")'
         class="bg-black w-36 p-2 text-white text-center"
     >
         追加
@@ -31,8 +35,8 @@ Stamper は、指定されたテンプレートを使用して動的に要素を
 <script type="module">
     import { Stamper } from "./js/index.esm.js";
 
-    const stamperArea = document.querySelector('[stamper="mock"]');
-    const stamper = new Stamper({ stamperArea });
+    const rootEl = document.querySelector('[stamper="mock"]');
+    const stamper = new Stamper({ rootEl });
     stamper.init();
 </script>
 ```
