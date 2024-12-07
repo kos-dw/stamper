@@ -12,6 +12,6 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "dist/index.esm.js adding..."
-git add dist/index.esm.js
+git add dist/*
 
 echo "Build succeeded. Proceeding with commit."

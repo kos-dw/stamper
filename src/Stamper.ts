@@ -1,26 +1,38 @@
-import { DIRECTIVE_VALUES } from "~/constants";
+import { DIRECTIVE_VALUES, NOT_ALLOWED_PATTERNS } from "~/constants";
 import { StamperError } from "~/errors";
 
 class Stamper {
-    private stamperArea: HTMLElement;
+    private rootEl: HTMLElement;
     private tempEl: HTMLTemplateElement | null;
     private castEl: HTMLElement | null;
     private crateEl: HTMLElement | null;
     private currentIndex: number;
-    private callback: (children: HTMLElement[]) => void;
+    private callback: {
+        postInit: ((children: HTMLElement[]) => void) | null;
+        preAdd: ((...args: any[]) => void) | null;
+        postAdd: ((...args: any[]) => void) | null;
+        preDelete: ((...args: any[]) => void) | null;
+        postDelete: ((...args: any[]) => void) | null;
+    };
 
     /**
      * Stamperのインスタンスを作成します。
      * @param {Object} params - コンストラクタのパラメータ。
-     * @param {HTMLElement} params.stamperArea - 使用するスタンパーエリア。
+     * @param {HTMLElement} params.rootEl - 使用するスタンパーエリア。
      */
-    constructor({ stamperArea }: { stamperArea: HTMLElement }) {
-        this.stamperArea = stamperArea;
+    constructor({ rootEl }: { rootEl: HTMLElement }) {
+        this.rootEl = rootEl;
         this.currentIndex = 0;
         this.tempEl = null;
         this.castEl = null;
         this.crateEl = null;
-        this.callback = () => {};
+        this.callback = {
+            postInit: null,
+            preAdd: null,
+            postAdd: null,
+            preDelete: null,
+            postDelete: null,
+        };
     }
 
     /**
@@ -48,7 +60,7 @@ class Stamper {
         identifier: string | null
     ): HTMLElement {
         if (!identifier) throw new StamperError("Missing identifier.");
-        const element = this.stamperArea.querySelector(
+        const element = this.rootEl.querySelector(
             `[${directive}="${identifier}"]`
         ) as HTMLElement;
         if (!element) throw new StamperError(`Missing element. [${directive}]`);
@@ -69,21 +81,62 @@ class Stamper {
 
         this.castEl.addEventListener("click", (event) => {
             try {
+                const preAdd = this.castEl!.getAttribute(
+                    DIRECTIVE_VALUES.preAdd
+                );
+                const postAdd = this.castEl!.getAttribute(
+                    DIRECTIVE_VALUES.postAdd
+                );
+
                 const fragment = this.createFragment();
                 this.addIndex(fragment);
                 const children = Array.from(fragment.children) as HTMLElement[];
+
+                // 要素追加前のコールバック
+                if (preAdd) {
+                    this.createFunction(preAdd, [
+                        "rootEl",
+                        "tempEl",
+                        "castEl",
+                        "crateEl",
+                        "event",
+                    ])(
+                        this.rootEl,
+                        this.tempEl,
+                        this.castEl,
+                        this.crateEl,
+                        event
+                    );
+                }
+
                 if (!this.crateEl)
                     throw new StamperError(
                         `Missing elements. [${DIRECTIVE_VALUES.crate}]`
                     );
                 this.crateEl.appendChild(fragment);
 
-                if (this.callback) {
-                    this.callback(children);
+                // 要素追加後のコールバック
+                if (postAdd) {
+                    this.createFunction(postAdd, [
+                        "rootEl",
+                        "tempEl",
+                        "castEl",
+                        "crateEl",
+                        "event",
+                    ])(
+                        this.rootEl,
+                        this.tempEl,
+                        this.castEl,
+                        this.crateEl,
+                        event
+                    );
                 }
 
                 this.setupDeleteEvent(children);
                 this.currentIndex++;
+
+                // 初期化後のコールバック
+                if (this.callback.postInit) this.callback.postInit(children);
             } catch (error) {
                 this.handleError(error);
             }
@@ -115,10 +168,43 @@ class Stamper {
                 const ariaLabel =
                     event.currentTarget.getAttribute("aria-label") ||
                     "Delete element";
+                const preDelete = event.currentTarget.getAttribute(
+                    DIRECTIVE_VALUES.preDelete
+                );
+                const postDelete = event.currentTarget.getAttribute(
+                    DIRECTIVE_VALUES.postDelete
+                );
                 if (window.confirm(`以下の処理を実行します\n- ${ariaLabel}`)) {
+                    const keys = [
+                        "rootEl",
+                        "tempEl",
+                        "castEl",
+                        "crateEl",
+                        "children",
+                        "event",
+                    ];
+                    const values = [
+                        this.rootEl,
+                        this.tempEl,
+                        this.castEl,
+                        this.crateEl,
+                        children,
+                        event,
+                    ];
+
+                    // 要素削除前のコールバック
+                    if (preDelete) {
+                        this.createFunction(preDelete, keys)(...values);
+                    }
+
                     children.forEach((child) => {
                         child.remove();
                     });
+
+                    // 要素削除後のコールバック
+                    if (postDelete) {
+                        this.createFunction(postDelete, keys)(...values);
+                    }
                 }
             });
         }
@@ -248,7 +334,7 @@ class Stamper {
      */
     public init(): void {
         try {
-            const identifier = this.stamperArea.getAttribute("stamper");
+            const identifier = this.rootEl.getAttribute("stamper");
             const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, identifier);
             if (tempEl instanceof HTMLTemplateElement) {
                 this.tempEl = tempEl;
@@ -273,7 +359,7 @@ class Stamper {
      * @param {Function} callback - コールバック関数。
      */
     public addCallback(callback: (children: HTMLElement[]) => void): void {
-        this.callback = callback;
+        this.callback = { ...this.callback, postInit: callback };
     }
 
     /**
@@ -286,10 +372,41 @@ class Stamper {
             this.validateTemplateAndCast();
             const fragment = this.createFragment();
             this.populateSlots(fragment, data);
+            const children = Array.from(fragment.children) as HTMLElement[];
             this.castEl!.before(fragment);
+            this.setupDeleteEvent(children);
         } catch (error) {
             this.handleError(error);
         }
+    }
+
+    /**
+     * コールバックを設定します。
+     * @param {Object} callbacks - コールバック関数のオブジェクト。
+     */
+    public addCallbacks(callbacks: {
+        postInit?: (children: HTMLElement[]) => void;
+        preAdd?: (...args: any[]) => void;
+        postAdd?: (...args: any[]) => void;
+        preDelete?: (...args: any[]) => void;
+        postDelete?: (...args: any[]) => void;
+    }): void {
+        this.callback = { ...this.callback, ...callbacks };
+    }
+
+    /**
+     * コード文字列から関数を生成します。
+     * @param {string} code - 関数のコード文字列。
+     * @param {string[]} [params=[]] - 関数のパラメータ。
+     * @returns {Function} 生成された関数。
+     * @throws {StamperError} コードが見つからない場合、または許可されていないパターンが含まれている場合。
+     */
+    createFunction(code: string, params: string[] = []): Function {
+        if (!code) throw new StamperError("code is not found");
+        if (NOT_ALLOWED_PATTERNS.some((pattern) => pattern.test(code)))
+            throw new StamperError("Binder is not work");
+
+        return new Function(...params, `${code}`);
     }
 }
 

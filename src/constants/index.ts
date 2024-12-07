@@ -6,4 +6,25 @@ export const DIRECTIVE_VALUES = {
     index: "s-index",
     sequence: "s-sequence",
     slot: "s-slot",
+    preAdd: "s-preAdd",
+    postAdd: "s-postAdd",
+    preDelete: "s-preDelete",
+    postDelete: "s-postDelete",
 };
+
+export const NOT_ALLOWED_PATTERNS = [
+    /\bfunction\b/,
+    /\bnew\b/,
+    /\beval\b/,
+    /\blocalStorage\b/,
+    /\bsessionStorage\b/,
+    /\bXMLHttpRequest\b/,
+    /\bfetch\b/,
+    /\bsetTimeout\b/,
+    /\bsetInterval\b/,
+    /\bPromise\b/,
+    /\basync\b/,
+    /\bawait\b/,
+    /\bimport\b/,
+    /\bexport\b/,
+];
