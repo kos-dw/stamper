@@ -6,10 +6,10 @@ export const DIRECTIVE_VALUES = {
     index: "s-index",
     sequence: "s-sequence",
     slot: "s-slot",
-    preAdd: "s-preAdd",
-    postAdd: "s-postAdd",
-    preDelete: "s-preDelete",
-    postDelete: "s-postDelete",
+    preadd: "s-preadd",
+    postadd: "s-postadd",
+    predelete: "s-predelete",
+    postdelete: "s-postdelete",
 };
 
 export const NOT_ALLOWED_PATTERNS = [
