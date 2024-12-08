@@ -7,10 +7,10 @@ var DIRECTIVE_VALUES = {
   index: "s-index",
   sequence: "s-sequence",
   slot: "s-slot",
-  preAdd: "s-preAdd",
-  postAdd: "s-postAdd",
-  preDelete: "s-preDelete",
-  postDelete: "s-postDelete"
+  preadd: "s-preadd",
+  postadd: "s-postadd",
+  predelete: "s-predelete",
+  postdelete: "s-postdelete"
 };
 var NOT_ALLOWED_PATTERNS = [
   /\bfunction\b/,
@@ -63,11 +63,11 @@ var Stamper = class {
     this.castEl = null;
     this.crateEl = null;
     this.callback = {
-      postInit: null,
-      preAdd: null,
-      postAdd: null,
-      preDelete: null,
-      postDelete: null
+      postinit: null,
+      preadd: null,
+      postadd: null,
+      predelete: null,
+      postdelete: null
     };
   }
   /**
@@ -110,17 +110,17 @@ var Stamper = class {
     }
     this.castEl.addEventListener("click", (event) => {
       try {
-        const preAdd = this.castEl.getAttribute(
-          DIRECTIVE_VALUES.preAdd
+        const preadd = this.castEl.getAttribute(
+          DIRECTIVE_VALUES.preadd
         );
-        const postAdd = this.castEl.getAttribute(
-          DIRECTIVE_VALUES.postAdd
+        const postadd = this.castEl.getAttribute(
+          DIRECTIVE_VALUES.postadd
         );
         const fragment = this.createFragment();
         this.addIndex(fragment);
         const children = Array.from(fragment.children);
-        if (preAdd) {
-          this.createFunction(preAdd, [
+        if (preadd) {
+          this.createFunction(preadd, [
             "rootEl",
             "tempEl",
             "castEl",
@@ -139,8 +139,8 @@ var Stamper = class {
             `Missing elements. [${DIRECTIVE_VALUES.crate}]`
           );
         this.crateEl.appendChild(fragment);
-        if (postAdd) {
-          this.createFunction(postAdd, [
+        if (postadd) {
+          this.createFunction(postadd, [
             "rootEl",
             "tempEl",
             "castEl",
@@ -156,7 +156,7 @@ var Stamper = class {
         }
         this.setupDeleteEvent(children);
         this.currentIndex++;
-        if (this.callback.postInit) this.callback.postInit(children);
+        if (this.callback.postinit) this.callback.postinit(children);
       } catch (error) {
         this.handleError(error);
       }
@@ -184,11 +184,11 @@ var Stamper = class {
         if (!(event.currentTarget instanceof HTMLButtonElement))
           throw new StamperError("Invalid element.");
         const ariaLabel = event.currentTarget.getAttribute("aria-label") || "Delete element";
-        const preDelete = event.currentTarget.getAttribute(
-          DIRECTIVE_VALUES.preDelete
+        const predelete = event.currentTarget.getAttribute(
+          DIRECTIVE_VALUES.predelete
         );
-        const postDelete = event.currentTarget.getAttribute(
-          DIRECTIVE_VALUES.postDelete
+        const postdelete = event.currentTarget.getAttribute(
+          DIRECTIVE_VALUES.postdelete
         );
         if (window.confirm(`\u4EE5\u4E0B\u306E\u51E6\u7406\u3092\u5B9F\u884C\u3057\u307E\u3059
 - ${ariaLabel}`)) {
@@ -208,14 +208,14 @@ var Stamper = class {
             children,
             event
           ];
-          if (preDelete) {
-            this.createFunction(preDelete, keys)(...values);
+          if (predelete) {
+            this.createFunction(predelete, keys)(...values);
           }
           children.forEach((child) => {
             child.remove();
           });
-          if (postDelete) {
-            this.createFunction(postDelete, keys)(...values);
+          if (postdelete) {
+            this.createFunction(postdelete, keys)(...values);
           }
         }
       });
@@ -355,7 +355,7 @@ var Stamper = class {
    * @param {Function} callback - コールバック関数。
    */
   addCallback(callback) {
-    this.callback = { ...this.callback, postInit: callback };
+    this.callback = { ...this.callback, postinit: callback };
   }
   /**
    * 提供されたデータでスロットを埋めてアイテムを追加します。

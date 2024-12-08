@@ -13,8 +13,8 @@ Stamper は、指定されたテンプレートを使用して動的に要素を
         <button
             type="button"
             s-delete="mock"
-            s-preDelete='console.log("preDelete")'
-            s-postDelete='console.log("postDelete")'
+            s-predelete='console.log("predelete")'
+            s-postdelete='console.log("postdelete")'
             class="bg-red-700 w-36 p-1 text-white text-center"
         >
             削除
@@ -24,8 +24,8 @@ Stamper は、指定されたテンプレートを使用して動的に要素を
     <button
         type="button"
         s-cast="mock"
-        s-preAdd='console.log("preAdd")'
-        s-postAdd='console.log("postAdd")'
+        s-preadd='console.log("preadd")'
+        s-postadd='console.log("postadd")'
         class="bg-black w-36 p-2 text-white text-center"
     >
         追加

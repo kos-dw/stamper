@@ -8,11 +8,11 @@ class Stamper {
     private crateEl: HTMLElement | null;
     private currentIndex: number;
     private callback: {
-        postInit: ((children: HTMLElement[]) => void) | null;
-        preAdd: ((...args: any[]) => void) | null;
-        postAdd: ((...args: any[]) => void) | null;
-        preDelete: ((...args: any[]) => void) | null;
-        postDelete: ((...args: any[]) => void) | null;
+        postinit: ((children: HTMLElement[]) => void) | null;
+        preadd: ((...args: any[]) => void) | null;
+        postadd: ((...args: any[]) => void) | null;
+        predelete: ((...args: any[]) => void) | null;
+        postdelete: ((...args: any[]) => void) | null;
     };
 
     /**
@@ -27,11 +27,11 @@ class Stamper {
         this.castEl = null;
         this.crateEl = null;
         this.callback = {
-            postInit: null,
-            preAdd: null,
-            postAdd: null,
-            preDelete: null,
-            postDelete: null,
+            postinit: null,
+            preadd: null,
+            postadd: null,
+            predelete: null,
+            postdelete: null,
         };
     }
 
@@ -81,11 +81,11 @@ class Stamper {
 
         this.castEl.addEventListener("click", (event) => {
             try {
-                const preAdd = this.castEl!.getAttribute(
-                    DIRECTIVE_VALUES.preAdd
+                const preadd = this.castEl!.getAttribute(
+                    DIRECTIVE_VALUES.preadd
                 );
-                const postAdd = this.castEl!.getAttribute(
-                    DIRECTIVE_VALUES.postAdd
+                const postadd = this.castEl!.getAttribute(
+                    DIRECTIVE_VALUES.postadd
                 );
 
                 const fragment = this.createFragment();
@@ -93,8 +93,8 @@ class Stamper {
                 const children = Array.from(fragment.children) as HTMLElement[];
 
                 // 要素追加前のコールバック
-                if (preAdd) {
-                    this.createFunction(preAdd, [
+                if (preadd) {
+                    this.createFunction(preadd, [
                         "rootEl",
                         "tempEl",
                         "castEl",
@@ -116,8 +116,8 @@ class Stamper {
                 this.crateEl.appendChild(fragment);
 
                 // 要素追加後のコールバック
-                if (postAdd) {
-                    this.createFunction(postAdd, [
+                if (postadd) {
+                    this.createFunction(postadd, [
                         "rootEl",
                         "tempEl",
                         "castEl",
@@ -136,7 +136,7 @@ class Stamper {
                 this.currentIndex++;
 
                 // 初期化後のコールバック
-                if (this.callback.postInit) this.callback.postInit(children);
+                if (this.callback.postinit) this.callback.postinit(children);
             } catch (error) {
                 this.handleError(error);
             }
@@ -168,11 +168,11 @@ class Stamper {
                 const ariaLabel =
                     event.currentTarget.getAttribute("aria-label") ||
                     "Delete element";
-                const preDelete = event.currentTarget.getAttribute(
-                    DIRECTIVE_VALUES.preDelete
+                const predelete = event.currentTarget.getAttribute(
+                    DIRECTIVE_VALUES.predelete
                 );
-                const postDelete = event.currentTarget.getAttribute(
-                    DIRECTIVE_VALUES.postDelete
+                const postdelete = event.currentTarget.getAttribute(
+                    DIRECTIVE_VALUES.postdelete
                 );
                 if (window.confirm(`以下の処理を実行します\n- ${ariaLabel}`)) {
                     const keys = [
@@ -193,8 +193,8 @@ class Stamper {
                     ];
 
                     // 要素削除前のコールバック
-                    if (preDelete) {
-                        this.createFunction(preDelete, keys)(...values);
+                    if (predelete) {
+                        this.createFunction(predelete, keys)(...values);
                     }
 
                     children.forEach((child) => {
@@ -202,8 +202,8 @@ class Stamper {
                     });
 
                     // 要素削除後のコールバック
-                    if (postDelete) {
-                        this.createFunction(postDelete, keys)(...values);
+                    if (postdelete) {
+                        this.createFunction(postdelete, keys)(...values);
                     }
                 }
             });
@@ -359,7 +359,7 @@ class Stamper {
      * @param {Function} callback - コールバック関数。
      */
     public addCallback(callback: (children: HTMLElement[]) => void): void {
-        this.callback = { ...this.callback, postInit: callback };
+        this.callback = { ...this.callback, postinit: callback };
     }
 
     /**
@@ -385,11 +385,11 @@ class Stamper {
      * @param {Object} callbacks - コールバック関数のオブジェクト。
      */
     public addCallbacks(callbacks: {
-        postInit?: (children: HTMLElement[]) => void;
-        preAdd?: (...args: any[]) => void;
-        postAdd?: (...args: any[]) => void;
-        preDelete?: (...args: any[]) => void;
-        postDelete?: (...args: any[]) => void;
+        postinit?: (children: HTMLElement[]) => void;
+        preadd?: (...args: any[]) => void;
+        postadd?: (...args: any[]) => void;
+        predelete?: (...args: any[]) => void;
+        postdelete?: (...args: any[]) => void;
     }): void {
         this.callback = { ...this.callback, ...callbacks };
     }
