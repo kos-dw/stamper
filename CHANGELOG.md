@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/kos-dw/stamper/compare/v1.1.0...v1.1.1) (2024-12-08)
+
+
+### Bug Fixes
+
+* ディレクティブの一部キャメルケースを廃止、その他 ([#7](https://github.com/kos-dw/stamper/issues/7)) ([cb860c5](https://github.com/kos-dw/stamper/commit/cb860c5e76361e720083e35753ef295d71a4e95b))
+
 ## [1.1.0](https://github.com/kos-dw/stamper/compare/v1.0.0...v1.1.0) (2024-12-07)
 
 
