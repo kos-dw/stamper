@@ -8,7 +8,7 @@ class Stamper {
     private crateEl: HTMLElement | null;
     private currentIndex: number;
     private callback: {
-        postinit: ((children: HTMLElement[]) => void) | null;
+        postinit: (() => void) | null;
         preadd: ((...args: any[]) => void) | null;
         postadd: ((...args: any[]) => void) | null;
         predelete: ((...args: any[]) => void) | null;
@@ -99,12 +99,14 @@ class Stamper {
                         "tempEl",
                         "castEl",
                         "crateEl",
+                        "children",
                         "event",
                     ])(
                         this.rootEl,
                         this.tempEl,
                         this.castEl,
                         this.crateEl,
+                        children,
                         event
                     );
                 }
@@ -122,12 +124,14 @@ class Stamper {
                         "tempEl",
                         "castEl",
                         "crateEl",
+                        "children",
                         "event",
                     ])(
                         this.rootEl,
                         this.tempEl,
                         this.castEl,
                         this.crateEl,
+                        children,
                         event
                     );
                 }
@@ -135,8 +139,7 @@ class Stamper {
                 this.setupDeleteEvent(children);
                 this.currentIndex++;
 
-                // 初期化後のコールバック
-                if (this.callback.postinit) this.callback.postinit(children);
+
             } catch (error) {
                 this.handleError(error);
             }
@@ -329,6 +332,22 @@ class Stamper {
     }
 
     /**
+     * コード文字列から関数を生成します。
+     * @private
+     * @param {string} code - 関数のコード文字列。
+     * @param {string[]} [params=[]] - 関数のパラメータ。
+     * @returns {Function} 生成された関数。
+     * @throws {StamperError} コードが見つからない場合、または許可されていないパターンが含まれている場合。
+     */
+    private createFunction(code: string, params: string[] = []): Function {
+        if (!code) throw new StamperError("code is not found");
+        if (NOT_ALLOWED_PATTERNS.some((pattern) => pattern.test(code)))
+            throw new StamperError("Stamper is not work");
+
+        return new Function(...params, `${code}`);
+    }
+
+    /**
      * クリックイベントを設定してStamperを初期化します。
      * @throws {StamperError} キャスト要素が見つからない場合。
      */
@@ -349,18 +368,15 @@ class Stamper {
                 identifier
             );
             this.setupClickEvent();
+
+            this.rootEl.setAttribute("s-inited", "true");
+            // 初期化後のコールバック
+            if (this.callback.postinit) this.callback.postinit();
         } catch (error) {
             this.handleError(error);
         }
     }
 
-    /**
-     * コールバックを設定します。
-     * @param {Function} callback - コールバック関数。
-     */
-    public addCallback(callback: (children: HTMLElement[]) => void): void {
-        this.callback = { ...this.callback, postinit: callback };
-    }
 
     /**
      * 提供されたデータでスロットを埋めてアイテムを追加します。
@@ -381,33 +397,13 @@ class Stamper {
     }
 
     /**
-     * コールバックを設定します。
-     * @param {Object} callbacks - コールバック関数のオブジェクト。
+     * 初期化後のコールバックを設定します。
+     * @param {Function} callback - コールバック関数。
      */
-    public addCallbacks(callbacks: {
-        postinit?: (children: HTMLElement[]) => void;
-        preadd?: (...args: any[]) => void;
-        postadd?: (...args: any[]) => void;
-        predelete?: (...args: any[]) => void;
-        postdelete?: (...args: any[]) => void;
-    }): void {
-        this.callback = { ...this.callback, ...callbacks };
+    public addPostInit(callback: typeof this.callback.postinit) {
+        this.callback.postinit = callback;
     }
 
-    /**
-     * コード文字列から関数を生成します。
-     * @param {string} code - 関数のコード文字列。
-     * @param {string[]} [params=[]] - 関数のパラメータ。
-     * @returns {Function} 生成された関数。
-     * @throws {StamperError} コードが見つからない場合、または許可されていないパターンが含まれている場合。
-     */
-    createFunction(code: string, params: string[] = []): Function {
-        if (!code) throw new StamperError("code is not found");
-        if (NOT_ALLOWED_PATTERNS.some((pattern) => pattern.test(code)))
-            throw new StamperError("Binder is not work");
-
-        return new Function(...params, `${code}`);
-    }
 }
 
 export { Stamper };
