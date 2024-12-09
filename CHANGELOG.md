@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/kos-dw/stamper/compare/v1.1.1...v1.1.2) (2024-12-09)
+
+
+### Bug Fixes
+
+* preinitの修正とテストの追加 ([#10](https://github.com/kos-dw/stamper/issues/10)) ([4def495](https://github.com/kos-dw/stamper/commit/4def495f121d8af16d771f72d101c960c7d38c03))
+
 ## [1.1.1](https://github.com/kos-dw/stamper/compare/v1.1.0...v1.1.1) (2024-12-08)
 
 
