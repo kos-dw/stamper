@@ -14,7 +14,6 @@ export const DIRECTIVE_VALUES = {
 
 export const NOT_ALLOWED_PATTERNS = [
     /\bfunction\b/,
-    /\bnew\b/,
     /\beval\b/,
     /\blocalStorage\b/,
     /\bsessionStorage\b/,
