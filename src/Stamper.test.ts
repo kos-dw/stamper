@@ -50,11 +50,7 @@ describe("Stamperの動作テスト", () => {
 
         // テスト対象のクラスを初期化
         stamper = new Stamper({ rootEl });
-        stamper.init();
-    });
-
-    test("初期化時にエラーが発生しない", () => {
-        expect(() => stamper.init()).not.toThrow();
+        
     });
 
     test("初期レンダリング時に、rootEl、crateEl、addBtnが存在する", () => {
@@ -63,7 +59,23 @@ describe("Stamperの動作テスト", () => {
         expect(addBtn).not.toBeNull();
     });
 
+    test("初期化時にエラーが発生しない", () => {
+        expect(() => stamper.init()).not.toThrow();
+    });
+
+    test("初期化後に属性値が追加されている", () => {
+        stamper.init();
+        expect(rootEl.hasAttribute("s-inited")).toBeTruthy();
+    });
+
+    test("postinitが動作している", () => {
+        stamper.addPostInit(() => {alert("postinit")});
+        stamper.init();
+        expect(alertSpy).toHaveBeenCalledWith("postinit");
+    });
+
     test("[s-cast]をクリックしたら要素が追加されている", () => {
+        stamper.init();
         const children = crateEl.children;
         const beforeElLength = children.length;
         addBtn.click();
@@ -72,6 +84,7 @@ describe("Stamperの動作テスト", () => {
     });
 
     test("[s-delete]をクリックしたら要素が削除されている", () => {
+        stamper.init();
         addBtn.click();
         const deleteBtn = crateEl.querySelector(
             "[s-delete]"
@@ -83,6 +96,7 @@ describe("Stamperの動作テスト", () => {
     });
 
     test("[s-sequence]の要素内が[1]スタートでの連番になっている", () => {
+        stamper.init();
         let sequenceEls: NodeListOf<HTMLElement>;
 
         addBtn.click();
@@ -96,6 +110,7 @@ describe("Stamperの動作テスト", () => {
     });
 
     test("[s-index]の対象の属性値の{{index}}が[0]スタートでの連番になっている", () => {
+        stamper.init();
         let indexEls: NodeListOf<HTMLElement>;
         const modifier = "name";
 
@@ -111,12 +126,14 @@ describe("Stamperの動作テスト", () => {
     });
 
     test("[s-preadd]と[s-postadd]が機能している", () => {
+        stamper.init();
         addBtn.click();
         expect(alertSpy).toHaveBeenCalledWith("preadd");
         expect(alertSpy).toHaveBeenCalledWith("postadd");
     });
 
     test("[s-predelete]と[s-postdelete]が機能している", () => {
+        stamper.init();
         addBtn.click();
         const deleteBtn = crateEl.querySelector(
             "[s-delete]"
