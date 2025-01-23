@@ -7,18 +7,20 @@ Stamper は、指定されたテンプレートを使用して動的に要素を
     <div s-crate="mock"></div>
 
     <template s-temp="mock">
-        <div s-sequence="000">連番</div>
-        <div name="title{{index}}" s-index="name">タイトル</div>
-        <div name="body{{index}}" s-index="name">コンテンツ</div>
-        <button
-            type="button"
-            s-delete="mock"
-            s-predelete='console.log("predelete")'
-            s-postdelete='console.log("postdelete")'
-            class="bg-red-700 w-36 p-1 text-white text-center"
-        >
-            削除
-        </button>
+        <div class="">
+            <div s-sequence="000">連番</div>
+            <div name="title{{index}}" s-index="name">タイトル</div>
+            <div name="body{{index}}" s-index="name">コンテンツ</div>
+            <button
+                type="button"
+                s-delete="mock"
+                s-predelete='console.log("predelete")'
+                s-postdelete='console.log("postdelete")'
+                class="bg-red-700 w-36 p-1 text-white text-center"
+            >
+                削除
+            </button>
+        </div>
     </template>
 
     <button
@@ -49,7 +51,8 @@ Stamper は、指定されたテンプレートを使用して動的に要素を
 
 ### s-temp
 
-`stamper` 属性で指定されたスタンプに使用されるテンプレートを指定します。
+`stamper` 属性で指定されたスタンプに使用されるテンプレートを指定します。  
+※[s-temp]要素の直下の要素は必ず1つだけにしてください。
 
 ### s-crate
 
@@ -76,9 +79,9 @@ expect
 
 `s-index` 属性で指定した属性値に記載する識別子をインデックスに置き換えます。カンマ区切りで複数の属性値を指定することができます。
 
--   `{{index}}` : インデックス  
+- `{{index}}` : インデックス  
     インデックス値に置き換わります。
--   `{{index++}}` : インデックス+1  
+- `{{index++}}` : インデックス+1  
     インデックス値に 1 を加算した値に置き換わります。
 
 ```html

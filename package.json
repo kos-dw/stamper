@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test:mac": "osascript -e \"tell application \\\"Terminal\\\" to do script \\\"cd '${STAMPER_HOME}' && npm run test:watch\\\"\"",
-    "test:watch": "vitest watch",
+    "test": "vitest watch",
     "dev": "concurrently \"npm run dev:serve\" \"npm run dev:css\" \"npm run dev:build\"",
     "dev:serve": "reload -b -d public",
     "dev:build": "esbuild src/index.esm.ts --bundle --format=esm --outdir=public/js --watch",

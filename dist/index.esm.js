@@ -70,6 +70,73 @@ var Stamper = class {
     };
   }
   /**
+   * クリックイベントを設定してStamperを初期化します。
+   * @throws {StamperError} キャスト要素が見つからない場合。
+   */
+  init() {
+    try {
+      const identifier = this.rootEl.getAttribute("stamper");
+      const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, identifier);
+      if (tempEl instanceof HTMLTemplateElement) {
+        this.tempEl = tempEl;
+      } else {
+        throw new StamperError(`${DIRECTIVE_VALUES.temp} is invalid element.`);
+      }
+      if (this.tempEl.content.children.length > 1) {
+        throw new StamperError(
+          "The template element must have only one child element."
+        );
+      }
+      this.castEl = this.queryElement(DIRECTIVE_VALUES.cast, identifier);
+      this.crateEl = this.queryElement(DIRECTIVE_VALUES.crate, identifier);
+      if (this.crateEl.children.length > 0) {
+        Array.from(this.crateEl.children).forEach((child) => {
+          const sequenceEls = child.querySelectorAll(
+            `[${DIRECTIVE_VALUES.sequence}]`
+          );
+          sequenceEls.forEach((sequenceEl) => {
+            sequenceEl.textContent = this.generateSequence(
+              sequenceEl
+            );
+          });
+          const fragment = child;
+          this.addIndex(fragment);
+          this.setupDeleteEvent([child]);
+          this.currentIndex++;
+        });
+      }
+      this.setupClickEvent();
+      this.rootEl.setAttribute("s-inited", "true");
+      if (this.callback.postinit) this.callback.postinit();
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+  /**
+   * 提供されたデータでスロットを埋めてアイテムを追加します。
+   * @param {Object} data - スロットを埋めるためのデータ。
+   * @throws {StamperError} テンプレートまたはキャスト要素が見つからない場合。
+   */
+  addItemWithSlot(data) {
+    try {
+      this.validateTemplateAndCast();
+      const fragment = this.createFragment();
+      this.populateSlots(fragment, data);
+      const children = Array.from(fragment.children);
+      this.castEl.before(fragment);
+      this.setupDeleteEvent(children);
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+  /**
+   * 初期化後のコールバックを設定します。
+   * @param {Function} callback - コールバック関数。
+   */
+  addPostInit(callback) {
+    this.callback.postinit = callback;
+  }
+  /**
    * エラーを処理し、コンソールにログを出力します。
    * @private
    * @param {unknown} error - 処理するエラー。
@@ -109,12 +176,8 @@ var Stamper = class {
     }
     this.castEl.addEventListener("click", (event) => {
       try {
-        const preadd = this.castEl.getAttribute(
-          DIRECTIVE_VALUES.preadd
-        );
-        const postadd = this.castEl.getAttribute(
-          DIRECTIVE_VALUES.postadd
-        );
+        const preadd = this.castEl.getAttribute(DIRECTIVE_VALUES.preadd);
+        const postadd = this.castEl.getAttribute(DIRECTIVE_VALUES.postadd);
         const fragment = this.createFragment();
         this.addIndex(fragment);
         const children = Array.from(fragment.children);
@@ -174,9 +237,7 @@ var Stamper = class {
       if (curr.hasAttribute(DIRECTIVE_VALUES.delete)) {
         prev.push(curr);
       } else {
-        const delEl = curr.querySelector(
-          `[${DIRECTIVE_VALUES.delete}]`
-        );
+        const delEl = curr.querySelector(`[${DIRECTIVE_VALUES.delete}]`);
         if (delEl) prev.push(delEl);
       }
       return prev;
@@ -229,20 +290,13 @@ var Stamper = class {
    * @param {DocumentFragment} fragment - インデックスを追加するフラグメント。
    */
   addIndex(fragment) {
-    const indexEls = fragment.querySelectorAll(
-      `[${DIRECTIVE_VALUES.index}]`
-    );
+    const indexEls = fragment.querySelectorAll(`[${DIRECTIVE_VALUES.index}]`);
     indexEls.forEach((indexEl) => {
-      const targetAttrKeys = indexEl.getAttribute(
-        `${DIRECTIVE_VALUES.index}`
-      );
+      const targetAttrKeys = indexEl.getAttribute(`${DIRECTIVE_VALUES.index}`);
       if (targetAttrKeys) {
         const targetAttrKeysArray = targetAttrKeys.split(",");
         targetAttrKeysArray.forEach((targetAttrKey) => {
-          const targetAttrValue = indexEl.getAttribute(targetAttrKey)?.replace(/{{index}}/gi, this.currentIndex.toString()).replace(
-            /{{index\+\+}}/gi,
-            (this.currentIndex + 1).toString()
-          );
+          const targetAttrValue = indexEl.getAttribute(targetAttrKey)?.replace(/{{index}}/gi, this.currentIndex.toString()).replace(/{{index\+\+}}/gi, (this.currentIndex + 1).toString());
           if (targetAttrValue) {
             indexEl.setAttribute(targetAttrKey, targetAttrValue);
           }
@@ -256,9 +310,7 @@ var Stamper = class {
    * @returns {DocumentFragment} 作成されたドキュメントフラグメント。
    */
   createFragment() {
-    const fragment = this.tempEl.content.cloneNode(
-      true
-    );
+    const fragment = this.tempEl.content.cloneNode(true);
     this.addSequenceToFragment(fragment);
     return fragment;
   }
@@ -272,9 +324,7 @@ var Stamper = class {
       `[${DIRECTIVE_VALUES.sequence}]`
     );
     sequenceEls.forEach((sequenceEl) => {
-      sequenceEl.textContent = this.generateSequence(
-        sequenceEl
-      );
+      sequenceEl.textContent = this.generateSequence(sequenceEl);
     });
   }
   /**
@@ -312,9 +362,7 @@ var Stamper = class {
    */
   populateSlots(fragment, data) {
     Object.keys(data).forEach((key) => {
-      const slot = fragment.querySelector(
-        `[${DIRECTIVE_VALUES.slot}=${key}]`
-      );
+      const slot = fragment.querySelector(`[${DIRECTIVE_VALUES.slot}=${key}]`);
       if (slot) slot.textContent = data[key];
     });
   }
@@ -340,57 +388,6 @@ var Stamper = class {
     if (NOT_ALLOWED_PATTERNS.some((pattern) => pattern.test(code)))
       throw new StamperError("Stamper is not work");
     return new Function(...params, `${code}`);
-  }
-  /**
-   * クリックイベントを設定してStamperを初期化します。
-   * @throws {StamperError} キャスト要素が見つからない場合。
-   */
-  init() {
-    try {
-      const identifier = this.rootEl.getAttribute("stamper");
-      const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, identifier);
-      if (tempEl instanceof HTMLTemplateElement) {
-        this.tempEl = tempEl;
-      } else {
-        throw new StamperError(
-          `${DIRECTIVE_VALUES.temp} is invalid element.`
-        );
-      }
-      this.castEl = this.queryElement(DIRECTIVE_VALUES.cast, identifier);
-      this.crateEl = this.queryElement(
-        DIRECTIVE_VALUES.crate,
-        identifier
-      );
-      this.setupClickEvent();
-      this.rootEl.setAttribute("s-inited", "true");
-      if (this.callback.postinit) this.callback.postinit();
-    } catch (error) {
-      this.handleError(error);
-    }
-  }
-  /**
-   * 提供されたデータでスロットを埋めてアイテムを追加します。
-   * @param {Object} data - スロットを埋めるためのデータ。
-   * @throws {StamperError} テンプレートまたはキャスト要素が見つからない場合。
-   */
-  addItemWithSlot(data) {
-    try {
-      this.validateTemplateAndCast();
-      const fragment = this.createFragment();
-      this.populateSlots(fragment, data);
-      const children = Array.from(fragment.children);
-      this.castEl.before(fragment);
-      this.setupDeleteEvent(children);
-    } catch (error) {
-      this.handleError(error);
-    }
-  }
-  /**
-   * 初期化後のコールバックを設定します。
-   * @param {Function} callback - コールバック関数。
-   */
-  addPostInit(callback) {
-    this.callback.postinit = callback;
   }
 };
 export {

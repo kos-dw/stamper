@@ -43,13 +43,47 @@ class Stamper {
     try {
       const identifier = this.rootEl.getAttribute("stamper");
       const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, identifier);
+
+      // tempElがHTMLTemplateElementでない場合はエラー
       if (tempEl instanceof HTMLTemplateElement) {
         this.tempEl = tempEl;
       } else {
         throw new StamperError(`${DIRECTIVE_VALUES.temp} is invalid element.`);
       }
+      // this.tempElのフラグメントの直下に要素が2つ以上ある場合はエラー
+      if (this.tempEl.content.children.length > 1) {
+        throw new StamperError(
+          "The template element must have only one child element."
+        );
+      }
       this.castEl = this.queryElement(DIRECTIVE_VALUES.cast, identifier);
       this.crateEl = this.queryElement(DIRECTIVE_VALUES.crate, identifier);
+
+      // セットアップ前にthis.crateEl内に要素が存在する場合、事前処理を実行
+      if (this.crateEl.children.length > 0) {
+        Array.from(this.crateEl.children).forEach((child) => {
+          const sequenceEls = child.querySelectorAll(
+            `[${DIRECTIVE_VALUES.sequence}]`
+          );
+
+          // [s-sequence]属性を持つ要素に連番を挿入
+          sequenceEls.forEach((sequenceEl) => {
+            sequenceEl.textContent = this.generateSequence(
+              sequenceEl as HTMLElement
+            );
+          });
+
+          // [s-index]属性で指定された属性にインデックスを挿入
+          const fragment = child as unknown;
+          this.addIndex(fragment as DocumentFragment);
+
+          // 削除イベントをバインド
+          this.setupDeleteEvent([child as HTMLElement]);
+
+          this.currentIndex++;
+        });
+      }
+
       this.setupClickEvent();
 
       this.rootEl.setAttribute("s-inited", "true");
