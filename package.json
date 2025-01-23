@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test:mac": "osascript -e \"tell application \\\"Terminal\\\" to do script \\\"cd '${STAMPER_HOME}' && npm run test:watch\\\"\"",
-    "test:watch": "vitest watch",
+    "test": "vitest run watch src/",
     "dev": "concurrently \"npm run dev:serve\" \"npm run dev:css\" \"npm run dev:build\"",
     "dev:serve": "reload -b -d public",
     "dev:build": "esbuild src/index.esm.ts --bundle --format=esm --outdir=public/js --watch",
@@ -28,6 +28,7 @@
     "eslint": "^9.10.0",
     "globals": "^15.9.0",
     "husky": "^9.1.7",
+    "playwright": "^1.49.1",
     "reload": "^3.3.0",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.2",
