@@ -3,18 +3,19 @@ import type { MockInstance } from "vitest";
 import { Stamper } from "~/Stamper";
 
 describe("Stamperの動作テスト", () => {
-
-  const confirmSpy: MockInstance = vi.spyOn(window, "confirm").mockReturnValue(true);
-  const alertSpy: MockInstance = vi.spyOn(window, "alert").mockImplementation(() => vi.fn());
+  const confirmSpy: MockInstance = vi
+    .spyOn(window, "confirm")
+    .mockReturnValue(true);
+  const alertSpy: MockInstance = vi
+    .spyOn(window, "alert")
+    .mockImplementation(() => vi.fn());
 
   let rootEl: HTMLElement;
   let tempEl: HTMLTemplateElement;
   let crateEl: HTMLElement;
   let addBtn: HTMLButtonElement;
 
-
   beforeEach(() => {
-
     document.body.innerHTML = `
         <section class="container mx-auto" stamper="mock">
           <button
@@ -105,7 +106,6 @@ describe("Stamperの動作テスト", () => {
   });
 
   test("[s-cast]をクリックしたら要素が追加されている", () => {
-
     const stamper = new Stamper({ rootEl });
     stamper.init();
     const children = crateEl.children;
@@ -116,7 +116,6 @@ describe("Stamperの動作テスト", () => {
   });
 
   test("[s-delete]をクリックしたら要素が削除されている", () => {
-
     const stamper = new Stamper({ rootEl });
     stamper.init();
     addBtn.click();
@@ -173,7 +172,6 @@ describe("Stamperの動作テスト", () => {
   });
 
   test("[s-preadd]と[s-postadd]が機能している", () => {
-
     const stamper = new Stamper({ rootEl });
     stamper.init();
 
@@ -184,7 +182,6 @@ describe("Stamperの動作テスト", () => {
   });
 
   test("[s-predelete]と[s-postdelete]が機能している", () => {
-
     const stamper = new Stamper({ rootEl });
     stamper.init();
     addBtn.click();
@@ -193,9 +190,8 @@ describe("Stamperの動作テスト", () => {
       const deleteBtn = child.querySelector("[s-delete]") as HTMLButtonElement;
       alertSpy.mockClear();
       deleteBtn.click();
-      expect(alertSpy).toHaveBeenNthCalledWith(1,"predelete");
-      expect(alertSpy).toHaveBeenNthCalledWith(2,"postdelete");
+      expect(alertSpy).toHaveBeenNthCalledWith(1, "predelete");
+      expect(alertSpy).toHaveBeenNthCalledWith(2, "postdelete");
     });
   });
-
 });
