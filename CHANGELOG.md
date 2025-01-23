@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/kos-dw/stamper/compare/v1.1.2...v1.2.0) (2025-01-23)
+
+
+### Features
+
+* Stamperの初期化処理を改善し、エラーハンドリングを追加 ([#12](https://github.com/kos-dw/stamper/issues/12)) ([a9fc60b](https://github.com/kos-dw/stamper/commit/a9fc60b318a0cfdf009196f20699df5b8d08bacb))
+
 ## [1.1.2](https://github.com/kos-dw/stamper/compare/v1.1.1...v1.1.2) (2024-12-09)
 
 
