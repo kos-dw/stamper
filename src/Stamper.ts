@@ -7,6 +7,7 @@ class Stamper {
   private castEl: HTMLElement | null;
   private crateEl: HTMLElement | null;
   private currentIndex: number;
+  private identifier: string;
   private callback: {
     postinit: (() => void) | null;
     preadd: ((...args: any[]) => void) | null;
@@ -22,6 +23,9 @@ class Stamper {
    */
   constructor({ rootEl }: { rootEl: HTMLElement }) {
     this.rootEl = rootEl;
+    const identifier = rootEl.getAttribute("stamper");
+    if (!identifier) throw new StamperError("Missing identifier.");
+    this.identifier = identifier;
     this.currentIndex = 0;
     this.tempEl = null;
     this.castEl = null;
@@ -41,8 +45,8 @@ class Stamper {
    */
   public init(): void {
     try {
-      const identifier = this.rootEl.getAttribute("stamper");
-      const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, identifier);
+      
+      const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, this.identifier);
 
       // tempElがHTMLTemplateElementでない場合はエラー
       if (tempEl instanceof HTMLTemplateElement) {
@@ -56,8 +60,8 @@ class Stamper {
           "The template element must have only one child element."
         );
       }
-      this.castEl = this.queryElement(DIRECTIVE_VALUES.cast, identifier);
-      this.crateEl = this.queryElement(DIRECTIVE_VALUES.crate, identifier);
+      this.castEl = this.queryElement(DIRECTIVE_VALUES.cast, this.identifier);
+      this.crateEl = this.queryElement(DIRECTIVE_VALUES.crate, this.identifier);
 
       // セットアップ前にthis.crateEl内に要素が存在する場合、事前処理を実行
       if (this.crateEl.children.length > 0) {
@@ -218,9 +222,10 @@ class Stamper {
    */
   private setupDeleteEvent(child: HTMLElement): void {
 
-    const deleteEl = child.querySelector(`[${DIRECTIVE_VALUES.delete}]`);
-    if (!deleteEl) return;
+    const deleteEl = child.querySelector(`[${DIRECTIVE_VALUES.delete}=${this.identifier}]`);
+    
     if (!(deleteEl instanceof HTMLButtonElement)) return;
+    
     deleteEl.addEventListener("click", (event: MouseEvent) => {
       if (!(event.currentTarget instanceof HTMLButtonElement))
         throw new StamperError("Invalid element.");

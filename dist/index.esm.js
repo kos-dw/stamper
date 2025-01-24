@@ -49,6 +49,7 @@ var Stamper = class {
   castEl;
   crateEl;
   currentIndex;
+  identifier;
   callback;
   /**
    * Stamperのインスタンスを作成します。
@@ -57,6 +58,9 @@ var Stamper = class {
    */
   constructor({ rootEl }) {
     this.rootEl = rootEl;
+    const identifier = rootEl.getAttribute("stamper");
+    if (!identifier) throw new StamperError("Missing identifier.");
+    this.identifier = identifier;
     this.currentIndex = 0;
     this.tempEl = null;
     this.castEl = null;
@@ -75,8 +79,7 @@ var Stamper = class {
    */
   init() {
     try {
-      const identifier = this.rootEl.getAttribute("stamper");
-      const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, identifier);
+      const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, this.identifier);
       if (tempEl instanceof HTMLTemplateElement) {
         this.tempEl = tempEl;
       } else {
@@ -87,8 +90,8 @@ var Stamper = class {
           "The template element must have only one child element."
         );
       }
-      this.castEl = this.queryElement(DIRECTIVE_VALUES.cast, identifier);
-      this.crateEl = this.queryElement(DIRECTIVE_VALUES.crate, identifier);
+      this.castEl = this.queryElement(DIRECTIVE_VALUES.cast, this.identifier);
+      this.crateEl = this.queryElement(DIRECTIVE_VALUES.crate, this.identifier);
       if (this.crateEl.children.length > 0) {
         Array.from(this.crateEl.children).forEach((child) => {
           const sequenceEls = child.querySelectorAll(
@@ -219,8 +222,7 @@ var Stamper = class {
    * @param {HTMLElement[]} child - 子要素の配列。
    */
   setupDeleteEvent(child) {
-    const deleteEl = child.querySelector(`[${DIRECTIVE_VALUES.delete}]`);
-    if (!deleteEl) return;
+    const deleteEl = child.querySelector(`[${DIRECTIVE_VALUES.delete}=${this.identifier}]`);
     if (!(deleteEl instanceof HTMLButtonElement)) return;
     deleteEl.addEventListener("click", (event) => {
       if (!(event.currentTarget instanceof HTMLButtonElement))
