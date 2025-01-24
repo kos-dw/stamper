@@ -1,1 +1,1 @@
-export { Stamper } from "~/Stamper.js";
+export { Stamper } from "~/stamper.js";

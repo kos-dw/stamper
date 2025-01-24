@@ -78,7 +78,7 @@ class Stamper {
           this.addIndex(fragment as DocumentFragment);
 
           // 削除イベントをバインド
-          this.setupDeleteEvent([child as HTMLElement]);
+          this.setupDeleteEvent(child as HTMLElement);
 
           this.currentIndex++;
         });
@@ -104,9 +104,9 @@ class Stamper {
       this.validateTemplateAndCast();
       const fragment = this.createFragment();
       this.populateSlots(fragment, data);
-      const children = Array.from(fragment.children) as HTMLElement[];
+      const child = fragment.children[0] as HTMLElement;
       this.castEl!.before(fragment);
-      this.setupDeleteEvent(children);
+      this.setupDeleteEvent(child);
     } catch (error) {
       this.handleError(error);
     }
@@ -171,7 +171,7 @@ class Stamper {
 
         const fragment = this.createFragment();
         this.addIndex(fragment);
-        const children = Array.from(fragment.children) as HTMLElement[];
+        const child = fragment.children[0] as HTMLElement;
 
         // 要素追加前のコールバック
         if (preadd) {
@@ -180,16 +180,9 @@ class Stamper {
             "tempEl",
             "castEl",
             "crateEl",
-            "children",
+            "child",
             "event",
-          ])(
-            this.rootEl,
-            this.tempEl,
-            this.castEl,
-            this.crateEl,
-            children,
-            event
-          );
+          ])(this.rootEl, this.tempEl, this.castEl, this.crateEl, child, event);
         }
 
         if (!this.crateEl)
@@ -205,19 +198,12 @@ class Stamper {
             "tempEl",
             "castEl",
             "crateEl",
-            "children",
+            "child",
             "event",
-          ])(
-            this.rootEl,
-            this.tempEl,
-            this.castEl,
-            this.crateEl,
-            children,
-            event
-          );
+          ])(this.rootEl, this.tempEl, this.castEl, this.crateEl, child, event);
         }
 
-        this.setupDeleteEvent(children);
+        this.setupDeleteEvent(child);
         this.currentIndex++;
       } catch (error) {
         this.handleError(error);
@@ -228,65 +214,56 @@ class Stamper {
   /**
    * 削除イベントを設定します。
    * @private
-   * @param {HTMLElement[]} children - 子要素の配列。
+   * @param {HTMLElement[]} child - 子要素の配列。
    */
-  private setupDeleteEvent(children: HTMLElement[]): void {
-    const deleteEl = children.reduce((prev, curr) => {
-      if (curr.hasAttribute(DIRECTIVE_VALUES.delete)) {
-        prev.push(curr);
-      } else {
-        const delEl = curr.querySelector(`[${DIRECTIVE_VALUES.delete}]`);
-        if (delEl) prev.push(delEl as HTMLElement);
-      }
-      return prev;
-    }, [] as HTMLElement[])[0];
+  private setupDeleteEvent(child: HTMLElement): void {
 
-    if (deleteEl && children.length > 0) {
-      deleteEl.addEventListener("click", (event: MouseEvent) => {
-        if (!(event.currentTarget instanceof HTMLButtonElement))
-          throw new StamperError("Invalid element.");
-        const ariaLabel =
-          event.currentTarget.getAttribute("aria-label") || "Delete element";
-        const predelete = event.currentTarget.getAttribute(
-          DIRECTIVE_VALUES.predelete
-        );
-        const postdelete = event.currentTarget.getAttribute(
-          DIRECTIVE_VALUES.postdelete
-        );
-        if (window.confirm(`以下の処理を実行します\n- ${ariaLabel}`)) {
-          const keys = [
-            "rootEl",
-            "tempEl",
-            "castEl",
-            "crateEl",
-            "children",
-            "event",
-          ];
-          const values = [
-            this.rootEl,
-            this.tempEl,
-            this.castEl,
-            this.crateEl,
-            children,
-            event,
-          ];
+    const deleteEl = child.querySelector(`[${DIRECTIVE_VALUES.delete}]`);
+    if (!deleteEl) return;
+    if (!(deleteEl instanceof HTMLButtonElement)) return;
+    deleteEl.addEventListener("click", (event: MouseEvent) => {
+      if (!(event.currentTarget instanceof HTMLButtonElement))
+        throw new StamperError("Invalid element.");
+      const ariaLabel =
+        event.currentTarget.getAttribute("aria-label") || "Delete element";
+      const predelete = event.currentTarget.getAttribute(
+        DIRECTIVE_VALUES.predelete
+      );
+      const postdelete = event.currentTarget.getAttribute(
+        DIRECTIVE_VALUES.postdelete
+      );
+      if (window.confirm(`以下の処理を実行します\n- ${ariaLabel}`)) {
+        const keys = [
+          "rootEl",
+          "tempEl",
+          "castEl",
+          "crateEl",
+          "child",
+          "event",
+        ];
+        const values = [
+          this.rootEl,
+          this.tempEl,
+          this.castEl,
+          this.crateEl,
+          child,
+          event,
+        ];
 
-          // 要素削除前のコールバック
-          if (predelete) {
-            this.createFunction(predelete, keys)(...values);
-          }
-
-          children.forEach((child) => {
-            child.remove();
-          });
-
-          // 要素削除後のコールバック
-          if (postdelete) {
-            this.createFunction(postdelete, keys)(...values);
-          }
+        // 要素削除前のコールバック
+        if (predelete) {
+          this.createFunction(predelete, keys)(...values);
         }
-      });
-    }
+
+        child.remove();
+
+        // 要素削除後のコールバック
+        if (postdelete) {
+          this.createFunction(postdelete, keys)(...values);
+        }
+      }
+    });
+    // }
   }
 
   /**
