@@ -42,7 +42,7 @@ ${stackLine}`);
   }
 };
 
-// src/Stamper.ts
+// src/stamper.ts
 var Stamper = class {
   rootEl;
   tempEl;
@@ -101,7 +101,7 @@ var Stamper = class {
           });
           const fragment = child;
           this.addIndex(fragment);
-          this.setupDeleteEvent([child]);
+          this.setupDeleteEvent(child);
           this.currentIndex++;
         });
       }
@@ -122,9 +122,9 @@ var Stamper = class {
       this.validateTemplateAndCast();
       const fragment = this.createFragment();
       this.populateSlots(fragment, data);
-      const children = Array.from(fragment.children);
+      const child = fragment.children[0];
       this.castEl.before(fragment);
-      this.setupDeleteEvent(children);
+      this.setupDeleteEvent(child);
     } catch (error) {
       this.handleError(error);
     }
@@ -180,23 +180,16 @@ var Stamper = class {
         const postadd = this.castEl.getAttribute(DIRECTIVE_VALUES.postadd);
         const fragment = this.createFragment();
         this.addIndex(fragment);
-        const children = Array.from(fragment.children);
+        const child = fragment.children[0];
         if (preadd) {
           this.createFunction(preadd, [
             "rootEl",
             "tempEl",
             "castEl",
             "crateEl",
-            "children",
+            "child",
             "event"
-          ])(
-            this.rootEl,
-            this.tempEl,
-            this.castEl,
-            this.crateEl,
-            children,
-            event
-          );
+          ])(this.rootEl, this.tempEl, this.castEl, this.crateEl, child, event);
         }
         if (!this.crateEl)
           throw new StamperError(
@@ -209,18 +202,11 @@ var Stamper = class {
             "tempEl",
             "castEl",
             "crateEl",
-            "children",
+            "child",
             "event"
-          ])(
-            this.rootEl,
-            this.tempEl,
-            this.castEl,
-            this.crateEl,
-            children,
-            event
-          );
+          ])(this.rootEl, this.tempEl, this.castEl, this.crateEl, child, event);
         }
-        this.setupDeleteEvent(children);
+        this.setupDeleteEvent(child);
         this.currentIndex++;
       } catch (error) {
         this.handleError(error);
@@ -230,59 +216,49 @@ var Stamper = class {
   /**
    * 削除イベントを設定します。
    * @private
-   * @param {HTMLElement[]} children - 子要素の配列。
+   * @param {HTMLElement[]} child - 子要素の配列。
    */
-  setupDeleteEvent(children) {
-    const deleteEl = children.reduce((prev, curr) => {
-      if (curr.hasAttribute(DIRECTIVE_VALUES.delete)) {
-        prev.push(curr);
-      } else {
-        const delEl = curr.querySelector(`[${DIRECTIVE_VALUES.delete}]`);
-        if (delEl) prev.push(delEl);
-      }
-      return prev;
-    }, [])[0];
-    if (deleteEl && children.length > 0) {
-      deleteEl.addEventListener("click", (event) => {
-        if (!(event.currentTarget instanceof HTMLButtonElement))
-          throw new StamperError("Invalid element.");
-        const ariaLabel = event.currentTarget.getAttribute("aria-label") || "Delete element";
-        const predelete = event.currentTarget.getAttribute(
-          DIRECTIVE_VALUES.predelete
-        );
-        const postdelete = event.currentTarget.getAttribute(
-          DIRECTIVE_VALUES.postdelete
-        );
-        if (window.confirm(`\u4EE5\u4E0B\u306E\u51E6\u7406\u3092\u5B9F\u884C\u3057\u307E\u3059
+  setupDeleteEvent(child) {
+    const deleteEl = child.querySelector(`[${DIRECTIVE_VALUES.delete}]`);
+    if (!deleteEl) return;
+    if (!(deleteEl instanceof HTMLButtonElement)) return;
+    deleteEl.addEventListener("click", (event) => {
+      if (!(event.currentTarget instanceof HTMLButtonElement))
+        throw new StamperError("Invalid element.");
+      const ariaLabel = event.currentTarget.getAttribute("aria-label") || "Delete element";
+      const predelete = event.currentTarget.getAttribute(
+        DIRECTIVE_VALUES.predelete
+      );
+      const postdelete = event.currentTarget.getAttribute(
+        DIRECTIVE_VALUES.postdelete
+      );
+      if (window.confirm(`\u4EE5\u4E0B\u306E\u51E6\u7406\u3092\u5B9F\u884C\u3057\u307E\u3059
 - ${ariaLabel}`)) {
-          const keys = [
-            "rootEl",
-            "tempEl",
-            "castEl",
-            "crateEl",
-            "children",
-            "event"
-          ];
-          const values = [
-            this.rootEl,
-            this.tempEl,
-            this.castEl,
-            this.crateEl,
-            children,
-            event
-          ];
-          if (predelete) {
-            this.createFunction(predelete, keys)(...values);
-          }
-          children.forEach((child) => {
-            child.remove();
-          });
-          if (postdelete) {
-            this.createFunction(postdelete, keys)(...values);
-          }
+        const keys = [
+          "rootEl",
+          "tempEl",
+          "castEl",
+          "crateEl",
+          "child",
+          "event"
+        ];
+        const values = [
+          this.rootEl,
+          this.tempEl,
+          this.castEl,
+          this.crateEl,
+          child,
+          event
+        ];
+        if (predelete) {
+          this.createFunction(predelete, keys)(...values);
         }
-      });
-    }
+        child.remove();
+        if (postdelete) {
+          this.createFunction(postdelete, keys)(...values);
+        }
+      }
+    });
   }
   /**
    * フラグメントにインデックスを追加します。

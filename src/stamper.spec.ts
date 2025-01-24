@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, test, vi } from "vitest";
 import type { MockInstance } from "vitest";
-import { Stamper } from "~/Stamper";
+import { Stamper } from "~/stamper";
 
 describe("Stamperの動作テスト", () => {
   const confirmSpy: MockInstance = vi
