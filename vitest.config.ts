@@ -7,6 +7,7 @@ export default defineConfig({
     coverage: {
       enabled: true,
       include: ["src/**/*.{test,spec}.{js,ts}"],
+      exclude: ["e2e/**", "**/node_modules/**"],
     },
   },
   resolve: {

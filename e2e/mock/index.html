@@ -45,5 +45,11 @@
         </div>
       </div>
     </section>
+    <script type="module">
+      import { Stamper } from "./js/index.esm.js";
+      const rootEl = document.querySelector('[stamper="mock"]');
+      const stamper = new Stamper({ rootEl });
+      stamper.init();
+    </script>
   </body>
 </html>
