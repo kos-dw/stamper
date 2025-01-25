@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/kos-dw/stamper/compare/v1.2.0...v1.2.1) (2025-01-25)
+
+
+### Bug Fixes
+
+* Stamperの削除イベント処理を改善し、子要素の扱いを修正 ([#15](https://github.com/kos-dw/stamper/issues/15)) ([66a5844](https://github.com/kos-dw/stamper/commit/66a5844a7b23303d74c7b954db8b33ec925f5300))
+
 ## [1.2.0](https://github.com/kos-dw/stamper/compare/v1.1.2...v1.2.0) (2025-01-23)
 
 
