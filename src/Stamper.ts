@@ -40,65 +40,6 @@ class Stamper {
   }
 
   /**
-   * クリックイベントを設定してStamperを初期化します。
-   * @throws {StamperError} キャスト要素が見つからない場合。
-   */
-  public init(): void {
-    try {
-      
-      const tempEl = this.queryElement(DIRECTIVE_VALUES.temp, this.identifier);
-
-      // tempElがHTMLTemplateElementでない場合はエラー
-      if (tempEl instanceof HTMLTemplateElement) {
-        this.tempEl = tempEl;
-      } else {
-        throw new StamperError(`${DIRECTIVE_VALUES.temp} is invalid element.`);
-      }
-      // this.tempElのフラグメントの直下に要素が2つ以上ある場合はエラー
-      if (this.tempEl.content.children.length > 1) {
-        throw new StamperError(
-          "The template element must have only one child element."
-        );
-      }
-      this.castEl = this.queryElement(DIRECTIVE_VALUES.cast, this.identifier);
-      this.crateEl = this.queryElement(DIRECTIVE_VALUES.crate, this.identifier);
-
-      // セットアップ前にthis.crateEl内に要素が存在する場合、事前処理を実行
-      if (this.crateEl.children.length > 0) {
-        Array.from(this.crateEl.children).forEach((child) => {
-          const sequenceEls = child.querySelectorAll(
-            `[${DIRECTIVE_VALUES.sequence}]`
-          );
-
-          // [s-sequence]属性を持つ要素に連番を挿入
-          sequenceEls.forEach((sequenceEl) => {
-            sequenceEl.textContent = this.generateSequence(
-              sequenceEl as HTMLElement
-            );
-          });
-
-          // [s-index]属性で指定された属性にインデックスを挿入
-          const fragment = child as unknown;
-          this.addIndex(fragment as DocumentFragment);
-
-          // 削除イベントをバインド
-          this.setupDeleteEvent(child as HTMLElement);
-
-          this.currentIndex++;
-        });
-      }
-
-      this.setupClickEvent();
-
-      this.rootEl.setAttribute("s-inited", "true");
-      // 初期化後のコールバック
-      if (this.callback.postinit) this.callback.postinit();
-    } catch (error) {
-      this.handleError(error);
-    }
-  }
-
-  /**
    * 提供されたデータでスロットを埋めてアイテムを追加します。
    * @param {Object} data - スロットを埋めるためのデータ。
    * @throws {StamperError} テンプレートまたはキャスト要素が見つからない場合。
@@ -125,6 +66,180 @@ class Stamper {
   }
 
   /**
+   * クリックイベントを設定してStamperを初期化します。
+   * @throws {StamperError} キャスト要素が見つからない場合。
+   */
+  public init(): void {
+    try {
+      this.tempEl = this.validateTemplateElement(
+        this.queryElement(DIRECTIVE_VALUES.temp, this.identifier),
+      );
+      this.castEl = this.queryElement(
+        DIRECTIVE_VALUES.cast,
+        this.identifier,
+      );
+      this.crateEl = this.queryElement(
+        DIRECTIVE_VALUES.crate,
+        this.identifier,
+      );
+
+      this.initializeCrateElements();
+      this.setupClickEvent();
+      this.rootEl.setAttribute("s-inited", "true");
+      if (this.callback.postinit) this.callback.postinit();
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  /**
+   * フラグメントにインデックスを追加します。
+   * @private
+   * @param {DocumentFragment} fragment - インデックスを追加するフラグメント。
+   */
+  private addIndex(fragment: DocumentFragment): void {
+    const indexEls = fragment.querySelectorAll(
+      `[${DIRECTIVE_VALUES.index}]`,
+    );
+    indexEls.forEach((indexEl) => {
+      const targetAttrKeys = indexEl.getAttribute(
+        `${DIRECTIVE_VALUES.index}`,
+      );
+      if (targetAttrKeys) {
+        const targetAttrKeysArray = targetAttrKeys.split(",");
+        targetAttrKeysArray.forEach((targetAttrKey) => {
+          const targetAttrValue = indexEl
+            .getAttribute(targetAttrKey)
+            ?.replace(/{{index}}/gi, this.currentIndex.toString())
+            .replace(
+              /{{index\+\+}}/gi,
+              (this.currentIndex + 1).toString(),
+            );
+          if (targetAttrValue) {
+            indexEl.setAttribute(targetAttrKey, targetAttrValue);
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * 要素にシーケンスを追加します。
+   * @private
+   * @param {HTMLElement} element - シーケンスを追加する要素。
+   */
+  private addSequenceToElement(element: HTMLElement): void {
+    const sequenceEls = element.querySelectorAll(
+      `[${DIRECTIVE_VALUES.sequence}]`,
+    );
+    sequenceEls.forEach((sequenceEl) => {
+      sequenceEl.textContent = this.generateSequence(
+        sequenceEl as HTMLElement,
+      );
+    });
+  }
+
+  /**
+   * フラグメントにシーケンスを追加します。
+   * @private
+   * @param {DocumentFragment} fragment - シーケンスを追加するフラグメント。
+   */
+  private addSequenceToFragment(fragment: DocumentFragment): void {
+    const sequenceEls = fragment.querySelectorAll(
+      `[${DIRECTIVE_VALUES.sequence}]`,
+    );
+    sequenceEls.forEach((sequenceEl) => {
+      sequenceEl.textContent = this.generateSequence(
+        sequenceEl as HTMLElement,
+      );
+    });
+  }
+
+  /**
+   * テンプレートの内容からドキュメントフラグメントを作成します。
+   * @private
+   * @returns {DocumentFragment} 作成されたドキュメントフラグメント。
+   */
+  private createFragment(): DocumentFragment {
+    const fragment = this.tempEl!.content.cloneNode(
+      true,
+    ) as DocumentFragment;
+    this.addSequenceToFragment(fragment);
+    return fragment;
+  }
+
+  /**
+   * コード文字列から関数を生成します。
+   * @private
+   * @param {string} code - 関数のコード文字列。
+   * @param {string[]} [params=[]] - 関数のパラメータ。
+   * @returns {Function} 生成された関数。
+   * @throws {StamperError} コードが見つからない場合、または許可されていないパターンが含まれている場合。
+   */
+  private createFunction(
+    code: string,
+    params: string[] = [],
+  ): Function {
+    if (!code) throw new StamperError("code is not found");
+    if (NOT_ALLOWED_PATTERNS.some((pattern) => pattern.test(code)))
+      throw new StamperError("Stamper is not work");
+
+    return new Function(...params, `${code}`);
+  }
+
+  /**
+   * コールバック関数を実行します。
+   * @private
+   * @param {string | null} callbackCode - コールバック関数のコード。
+   * @param {HTMLElement} child - 子要素。
+   * @param {Event} event - イベントオブジェクト。
+   */
+  private executeCallback(
+    callbackCode: string | null,
+    child: HTMLElement,
+    event: Event,
+  ): void {
+    if (callbackCode) {
+      this.createFunction(callbackCode, [
+        "rootEl",
+        "tempEl",
+        "castEl",
+        "crateEl",
+        "child",
+        "event",
+      ])(
+        this.rootEl,
+        this.tempEl,
+        this.castEl,
+        this.crateEl,
+        child,
+        event,
+      );
+    }
+  }
+
+  /**
+   * ゼロパディングされたインデックス文字列を生成します。
+   * @private
+   * @param {HTMLElement} target - パディング番号を取得するターゲット要素。
+   * @returns {string} 生成されたインデックス文字列。
+   * @throws {StamperError} s-sequence属性が見つからない場合。
+   */
+  private generateSequence(target: HTMLElement): string {
+    const paddingNum = target.getAttribute(
+      `${DIRECTIVE_VALUES.sequence}`,
+    );
+    if (!paddingNum)
+      throw new StamperError(
+        `Missing attribute: ${DIRECTIVE_VALUES.sequence}.`,
+      );
+
+    const digit = (paddingNum.match(/0/g) || []).length;
+    const indexString = (this.currentIndex + 1).toString();
+    return indexString.padStart(digit, "0");
+  }
+
+  /**
    * エラーを処理し、コンソールにログを出力します。
    * @private
    * @param {unknown} error - 処理するエラー。
@@ -138,6 +253,48 @@ class Stamper {
   }
 
   /**
+   * スタンパーエリア内の既存の要素を初期化します。
+   * @private
+   */
+  private initializeCrateElements(): void {
+    if (this.crateEl!.children.length > 0) {
+      Array.from(this.crateEl!.children).forEach((child) => {
+        this.processChildElement(child as HTMLElement);
+        this.currentIndex++;
+      });
+    }
+  }
+
+  /**
+   * 提供されたデータでフラグメントのスロットを埋めます。
+   * @private
+   * @param {DocumentFragment} fragment - スロットを埋めるフラグメント。
+   * @param {Object} data - スロットを埋めるためのデータ。
+   */
+  private populateSlots(
+    fragment: DocumentFragment,
+    data: { [key: string]: string },
+  ): void {
+    Object.keys(data).forEach((key) => {
+      const slot = fragment.querySelector(
+        `[${DIRECTIVE_VALUES.slot}=${key}]`,
+      );
+      if (slot) slot.textContent = data[key];
+    });
+  }
+
+  /**
+   * 子要素を処理します。
+   * @private
+   * @param {HTMLElement} child - 子要素。
+   */
+  private processChildElement(child: HTMLElement): void {
+    this.addSequenceToElement(child);
+    this.addIndex(child as unknown as DocumentFragment);
+    this.setupDeleteEvent(child);
+  }
+
+  /**
    * 指定されたディレクティブと識別子に基づいて要素をクエリします。
    * @private
    * @param {string} directive - ディレクティブ。
@@ -146,13 +303,14 @@ class Stamper {
    */
   private queryElement(
     directive: string,
-    identifier: string | null
+    identifier: string | null,
   ): HTMLElement {
     if (!identifier) throw new StamperError("Missing identifier.");
     const element = this.rootEl.querySelector(
-      `[${directive}="${identifier}"]`
+      `[${directive}="${identifier}"]`,
     ) as HTMLElement;
-    if (!element) throw new StamperError(`Missing element. [${directive}]`);
+    if (!element)
+      throw new StamperError(`Missing element. [${directive}]`);
     return element;
   }
 
@@ -164,48 +322,26 @@ class Stamper {
   private setupClickEvent(): void {
     if (!this.tempEl || !this.castEl || !this.crateEl) {
       throw new StamperError(
-        `Missing elements. [${DIRECTIVE_VALUES.temp}|${DIRECTIVE_VALUES.cast}|${DIRECTIVE_VALUES.crate}]`
+        `Missing elements. [${DIRECTIVE_VALUES.temp}|${DIRECTIVE_VALUES.cast}|${DIRECTIVE_VALUES.crate}]`,
       );
     }
 
     this.castEl.addEventListener("click", (event) => {
       try {
-        const preadd = this.castEl!.getAttribute(DIRECTIVE_VALUES.preadd);
-        const postadd = this.castEl!.getAttribute(DIRECTIVE_VALUES.postadd);
+        const preadd = this.castEl!.getAttribute(
+          DIRECTIVE_VALUES.preadd,
+        );
+        const postadd = this.castEl!.getAttribute(
+          DIRECTIVE_VALUES.postadd,
+        );
 
         const fragment = this.createFragment();
         this.addIndex(fragment);
         const child = fragment.children[0] as HTMLElement;
 
-        // 要素追加前のコールバック
-        if (preadd) {
-          this.createFunction(preadd, [
-            "rootEl",
-            "tempEl",
-            "castEl",
-            "crateEl",
-            "child",
-            "event",
-          ])(this.rootEl, this.tempEl, this.castEl, this.crateEl, child, event);
-        }
-
-        if (!this.crateEl)
-          throw new StamperError(
-            `Missing elements. [${DIRECTIVE_VALUES.crate}]`
-          );
-        this.crateEl.appendChild(fragment);
-
-        // 要素追加後のコールバック
-        if (postadd) {
-          this.createFunction(postadd, [
-            "rootEl",
-            "tempEl",
-            "castEl",
-            "crateEl",
-            "child",
-            "event",
-          ])(this.rootEl, this.tempEl, this.castEl, this.crateEl, child, event);
-        }
+        this.executeCallback(preadd, child, event);
+        this.crateEl!.appendChild(fragment);
+        this.executeCallback(postadd, child, event);
 
         this.setupDeleteEvent(child);
         this.currentIndex++;
@@ -221,21 +357,23 @@ class Stamper {
    * @param {HTMLElement[]} child - 子要素の配列。
    */
   private setupDeleteEvent(child: HTMLElement): void {
+    const deleteEl = child.querySelector(
+      `[${DIRECTIVE_VALUES.delete}=${this.identifier}]`,
+    );
 
-    const deleteEl = child.querySelector(`[${DIRECTIVE_VALUES.delete}=${this.identifier}]`);
-    
     if (!(deleteEl instanceof HTMLButtonElement)) return;
-    
+
     deleteEl.addEventListener("click", (event: MouseEvent) => {
       if (!(event.currentTarget instanceof HTMLButtonElement))
         throw new StamperError("Invalid element.");
       const ariaLabel =
-        event.currentTarget.getAttribute("aria-label") || "Delete element";
+        event.currentTarget.getAttribute("aria-label") ||
+        "Delete element";
       const predelete = event.currentTarget.getAttribute(
-        DIRECTIVE_VALUES.predelete
+        DIRECTIVE_VALUES.predelete,
       );
       const postdelete = event.currentTarget.getAttribute(
-        DIRECTIVE_VALUES.postdelete
+        DIRECTIVE_VALUES.postdelete,
       );
       if (window.confirm(`以下の処理を実行します\n- ${ariaLabel}`)) {
         const keys = [
@@ -255,115 +393,12 @@ class Stamper {
           event,
         ];
 
-        // 要素削除前のコールバック
-        if (predelete) {
-          this.createFunction(predelete, keys)(...values);
-        }
-
+        this.executeCallback(predelete, child, event);
         child.remove();
-
-        // 要素削除後のコールバック
-        if (postdelete) {
-          this.createFunction(postdelete, keys)(...values);
-        }
+        this.executeCallback(postdelete, child, event);
       }
     });
     // }
-  }
-
-  /**
-   * フラグメントにインデックスを追加します。
-   * @private
-   * @param {DocumentFragment} fragment - インデックスを追加するフラグメント。
-   */
-  private addIndex(fragment: DocumentFragment): void {
-    const indexEls = fragment.querySelectorAll(`[${DIRECTIVE_VALUES.index}]`);
-    indexEls.forEach((indexEl) => {
-      const targetAttrKeys = indexEl.getAttribute(`${DIRECTIVE_VALUES.index}`);
-      if (targetAttrKeys) {
-        const targetAttrKeysArray = targetAttrKeys.split(",");
-        targetAttrKeysArray.forEach((targetAttrKey) => {
-          const targetAttrValue = indexEl
-            .getAttribute(targetAttrKey)
-            ?.replace(/{{index}}/gi, this.currentIndex.toString())
-            .replace(/{{index\+\+}}/gi, (this.currentIndex + 1).toString());
-          if (targetAttrValue) {
-            indexEl.setAttribute(targetAttrKey, targetAttrValue);
-          }
-        });
-      }
-    });
-  }
-
-  /**
-   * テンプレートの内容からドキュメントフラグメントを作成します。
-   * @private
-   * @returns {DocumentFragment} 作成されたドキュメントフラグメント。
-   */
-  private createFragment(): DocumentFragment {
-    const fragment = this.tempEl!.content.cloneNode(true) as DocumentFragment;
-    this.addSequenceToFragment(fragment);
-    return fragment;
-  }
-
-  /**
-   * フラグメントにシーケンスを追加します。
-   * @private
-   * @param {DocumentFragment} fragment - シーケンスを追加するフラグメント。
-   */
-  private addSequenceToFragment(fragment: DocumentFragment): void {
-    const sequenceEls = fragment.querySelectorAll(
-      `[${DIRECTIVE_VALUES.sequence}]`
-    );
-    sequenceEls.forEach((sequenceEl) => {
-      sequenceEl.textContent = this.generateSequence(sequenceEl as HTMLElement);
-    });
-  }
-
-  /**
-   * ゼロパディングされたインデックス文字列を生成します。
-   * @private
-   * @param {HTMLElement} target - パディング番号を取得するターゲット要素。
-   * @returns {string} 生成されたインデックス文字列。
-   * @throws {StamperError} s-sequence属性が見つからない場合。
-   */
-  private generateSequence(target: HTMLElement): string {
-    const paddingNum = target.getAttribute(`${DIRECTIVE_VALUES.sequence}`);
-    if (!paddingNum)
-      throw new StamperError(
-        `Missing attribute: ${DIRECTIVE_VALUES.sequence}.`
-      );
-
-    const digit = (paddingNum.match(/0/g) || []).length;
-    const indexString = (this.currentIndex + 1).toString();
-    return this.zeroPad(indexString, digit);
-  }
-
-  /**
-   * 数字文字列をゼロパディングします。
-   * @private
-   * @param {string} numString - パディングする数字文字列。
-   * @param {number} length - パディングする長さ。
-   * @returns {string} パディングされた数字文字列。
-   */
-  private zeroPad(numString: string, length: number): string {
-    return numString.padStart(length, "0");
-  }
-
-  /**
-   * 提供されたデータでフラグメントのスロットを埋めます。
-   * @private
-   * @param {DocumentFragment} fragment - スロットを埋めるフラグメント。
-   * @param {Object} data - スロットを埋めるためのデータ。
-   */
-  private populateSlots(
-    fragment: DocumentFragment,
-    data: { [key: string]: string }
-  ): void {
-    Object.keys(data).forEach((key) => {
-      const slot = fragment.querySelector(`[${DIRECTIVE_VALUES.slot}=${key}]`);
-      if (slot) slot.textContent = data[key];
-    });
   }
 
   /**
@@ -372,24 +407,32 @@ class Stamper {
    * @throws {StamperError} テンプレートまたはキャスト要素が見つからない場合。
    */
   private validateTemplateAndCast(): void {
-    if (!this.tempEl) throw new StamperError("Template element not found.");
+    if (!this.tempEl)
+      throw new StamperError("Template element not found.");
     if (!this.castEl) throw new StamperError("Cast element not found.");
   }
 
   /**
-   * コード文字列から関数を生成します。
+   * テンプレート要素を検証します。
    * @private
-   * @param {string} code - 関数のコード文字列。
-   * @param {string[]} [params=[]] - 関数のパラメータ。
-   * @returns {Function} 生成された関数。
-   * @throws {StamperError} コードが見つからない場合、または許可されていないパターンが含まれている場合。
+   * @param {HTMLElement} tempEl - 検証するテンプレート要素。
+   * @returns {HTMLTemplateElement} 検証されたテンプレート要素。
+   * @throws {StamperError} テンプレート要素が無効な場合。
    */
-  private createFunction(code: string, params: string[] = []): Function {
-    if (!code) throw new StamperError("code is not found");
-    if (NOT_ALLOWED_PATTERNS.some((pattern) => pattern.test(code)))
-      throw new StamperError("Stamper is not work");
-
-    return new Function(...params, `${code}`);
+  private validateTemplateElement(
+    tempEl: HTMLElement,
+  ): HTMLTemplateElement {
+    if (!(tempEl instanceof HTMLTemplateElement)) {
+      throw new StamperError(
+        `${DIRECTIVE_VALUES.temp} is invalid element.`,
+      );
+    }
+    if (tempEl.content.children.length > 1) {
+      throw new StamperError(
+        "The template element must have only one child element.",
+      );
+    }
+    return tempEl;
   }
 }
 
