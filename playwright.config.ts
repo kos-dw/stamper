@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: "list",
   use: {
     trace: "on-first-retry",
-    // headless: false,
+    headless: true,
   },
   projects: [
     {
@@ -18,8 +18,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build:mock && npm run serve',
-    url: 'http://localhost:3000',
+    command: "npm run build && npm run serve",
+    url: "http://localhost:3000",
     timeout: 10 * 1000,
     reuseExistingServer: !process.env.CI,
   },

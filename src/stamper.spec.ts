@@ -1,8 +1,39 @@
-import { beforeEach, afterEach, describe, expect, test, vi } from "vitest";
+import { JSDOM } from "jsdom";
+import fs from "node:fs";
+import path from "node:path";
 import type { MockInstance } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
 import { Stamper } from "~/stamper";
 
+// 定数定義
+const HTML_FILEPATH = path.resolve(
+  __dirname,
+  "../dist/mock/index.html",
+);
+const IDENTIFIER = "mock";
+
+// テストスイート
 describe("Stamperの動作テスト", () => {
+  let rootEl: HTMLElement;
+  let tempEl: HTMLTemplateElement;
+  let crateEl: HTMLElement;
+  let addBtn: HTMLButtonElement;
+
+  // テスト対象のHTMLテキストを取得する
+  const html = fs.readFileSync(HTML_FILEPATH, "utf-8");
+  const dom = new JSDOM(html);
+  const stamperElementText = dom.window.document.body.querySelector(
+    `[stamper=${IDENTIFIER}]`,
+  )?.outerHTML as string;
+
+  // ポップアップの動作をモック化
   const confirmSpy: MockInstance = vi
     .spyOn(window, "confirm")
     .mockReturnValue(true);
@@ -10,72 +41,35 @@ describe("Stamperの動作テスト", () => {
     .spyOn(window, "alert")
     .mockImplementation(() => vi.fn());
 
-  let rootEl: HTMLElement;
-  let tempEl: HTMLTemplateElement;
-  let crateEl: HTMLElement;
-  let addBtn: HTMLButtonElement;
-
   beforeEach(() => {
-    document.body.innerHTML = `
-        <section class="container mx-auto" stamper="mock">
-          <button
-            aria-label="要素の追加"
-            type="button"
-            s-cast="mock"
-            s-preadd='alert("preadd")'
-            s-postadd='alert("postadd")'
-          >
-            追加
-          </button>
-          <template s-temp="mock">
-            <div class="">
-              <div s-sequence="0">連番</div>
-              <div name="{{index}}" s-index="name">タイトル</div>
-              <button
-                type="button"
-                s-delete="mock"
-                s-predelete='alert("predelete")'
-                s-postdelete='alert("postdelete")'
-              >
-                削除
-              </button>
-            </div>
-          </template>
-          <div
-            aria-label="要素を追加するコンテナ"
-            s-crate="mock"
-          >
-            <div class="">
-              <div s-sequence="0">連番</div>
-              <div name="{{index}}" s-index="name">タイトル</div>
-              <button
-                type="button"
-                s-delete="mock"
-                s-predelete='alert("predelete")'
-                s-postdelete='alert("postdelete")'
-              >
-                削除
-              </button>
-            </div>
-          </div>
-        </section>
-        `;
+    // テスト対象のHTMLをbodyに追加
+    document.body.innerHTML = stamperElementText;
 
     // テスト対象の要素を取得
-    rootEl = document.querySelector("[stamper=mock]") as HTMLElement;
-    tempEl = rootEl.querySelector("[s-temp=mock]") as HTMLTemplateElement;
-    crateEl = rootEl.querySelector("[s-crate=mock]") as HTMLElement;
-    crateEl = rootEl.querySelector("[s-crate=mock]") as HTMLElement;
-    addBtn = rootEl.querySelector("[s-cast=mock]") as HTMLButtonElement;
-
-    // テスト対象のクラスを初期化
+    rootEl = document.querySelector(
+      `[stamper=${IDENTIFIER}]`,
+    ) as HTMLElement;
+    tempEl = rootEl.querySelector(
+      `[s-temp=${IDENTIFIER}]`,
+    ) as HTMLTemplateElement;
+    crateEl = rootEl.querySelector(
+      `[s-crate=${IDENTIFIER}]`,
+    ) as HTMLElement;
+    crateEl = rootEl.querySelector(
+      `[s-crate=${IDENTIFIER}]`,
+    ) as HTMLElement;
+    addBtn = rootEl.querySelector(
+      `[s-cast=${IDENTIFIER}]`,
+    ) as HTMLButtonElement;
   });
 
   afterEach(() => {
-    // confirmのモックをクリア
+    // ダイアログのモックをクリア
     confirmSpy.mockClear();
-    // alertのモックをクリア
     alertSpy.mockClear();
+
+    // テスト対象の要素をクリア
+    document.body.innerHTML = "";
   });
 
   test("初期レンダリング時に、rootEl、crateEl、addBtnが存在する", () => {
@@ -121,7 +115,9 @@ describe("Stamperの動作テスト", () => {
     addBtn.click();
 
     Array.from(crateEl.children).forEach((child) => {
-      const deleteBtn = child.querySelector("[s-delete]") as HTMLButtonElement;
+      const deleteBtn = child.querySelector(
+        "[s-delete]",
+      ) as HTMLButtonElement;
       deleteBtn.click();
     });
 
@@ -187,7 +183,9 @@ describe("Stamperの動作テスト", () => {
     addBtn.click();
 
     Array.from(crateEl.children).forEach((child, index) => {
-      const deleteBtn = child.querySelector("[s-delete]") as HTMLButtonElement;
+      const deleteBtn = child.querySelector(
+        "[s-delete]",
+      ) as HTMLButtonElement;
       alertSpy.mockClear();
       deleteBtn.click();
       expect(alertSpy).toHaveBeenNthCalledWith(1, "predelete");
