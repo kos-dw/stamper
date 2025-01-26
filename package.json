@@ -7,11 +7,10 @@
   "type": "module",
   "scripts": {
     "test:mac": "osascript -e \"tell application \\\"Terminal\\\" to do script \\\"cd '${STAMPER_HOME}' && npm run test:watch\\\"\"",
-    "test": "vitest run watch src/",
-    "e2e": "npm run build:mock && playwright test",
-    "build": "esbuild src/index.esm.ts --bundle --format=esm --outdir=dist",
-    "serve": "serve ./e2e/mock -l 3000",
-    "build:mock": "esbuild src/index.esm.ts --bundle --format=esm --outdir=./e2e/mock/js",
+    "test": "vitest watch src",
+    "e2e": "npm run build && playwright test",
+    "build": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.esm.js",
+    "serve": "serve dist -l 3000",
     "preinstall": "typesync || :",
     "prepare": "husky"
   },

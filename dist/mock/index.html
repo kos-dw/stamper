@@ -2,11 +2,14 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
     <title>Document</title>
   </head>
   <body>
-    <section class="container mx-auto" stamper="mock">
+    <section stamper="mock">
       <button
         aria-label="要素の追加"
         type="button"
@@ -30,23 +33,10 @@
           </button>
         </div>
       </template>
-      <div aria-label="要素を追加するコンテナ" s-crate="mock">
-        <div class="">
-          <div s-sequence="0">連番</div>
-          <div name="{{index}}" s-index="name">タイトル</div>
-          <button
-            type="button"
-            s-delete="mock"
-            s-predelete='alert("predelete")'
-            s-postdelete='alert("postdelete")'
-          >
-            削除
-          </button>
-        </div>
-      </div>
+      <div aria-label="要素を追加するコンテナ" s-crate="mock"></div>
     </section>
     <script type="module">
-      import { Stamper } from "./js/index.esm.js";
+      import { Stamper } from "../index.esm.js";
       const rootEl = document.querySelector('[stamper="mock"]');
       const stamper = new Stamper({ rootEl });
       stamper.init();

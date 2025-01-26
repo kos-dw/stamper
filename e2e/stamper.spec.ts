@@ -8,8 +8,10 @@ const deleteSelector = "[s-delete=mock]";
 const sequenceSelector = "[s-sequence]";
 
 test.describe("Stamperの動作テスト", () => {
-  test("初期レンダリング時に必要な要素が存在するか確認", async ({ page }) => {
-    await page.goto("http://localhost:3000");
+  test("初期レンダリング時に必要な要素が存在するか確認", async ({
+    page,
+  }) => {
+    await page.goto("http://localhost:3000/mock/");
 
     const rootEl = await page.$(rootSelector);
     const tempEl = await page.$(tempSelector);
@@ -22,23 +24,29 @@ test.describe("Stamperの動作テスト", () => {
     expect(castEl).not.toBeNull();
   });
 
-  test("要素追加ボタンをクリックしたら要素が追加される", async ({ page }) => {
-    await page.goto("http://localhost:3000");
+  test("要素追加ボタンをクリックしたら要素が追加される", async ({
+    page,
+  }) => {
+    await page.goto("http://localhost:3000/mock/");
 
     const crateEl = page.locator(crateSelector).first();
     const castEl = page.locator(castSelector).first();
 
-    const beforeCount = await crateEl.evaluate((el) => el.children.length);
+    const beforeCount = await crateEl.evaluate(
+      (el) => el.children.length,
+    );
 
     await castEl.click();
 
-    const afterCount = await crateEl.evaluate((el) => el.children.length);
+    const afterCount = await crateEl.evaluate(
+      (el) => el.children.length,
+    );
 
     expect(afterCount).toBeGreaterThan(beforeCount);
   });
 
   test("[s-sequence]が正しい連番になっている", async ({ page }) => {
-    await page.goto("http://localhost:3000");
+    await page.goto("http://localhost:3000/mock/");
     const castEl = page.locator(castSelector).first();
     const sequenceEls = await page.locator(sequenceSelector).all();
 
@@ -50,8 +58,10 @@ test.describe("Stamperの動作テスト", () => {
     }
   });
 
-  test("要素削除ボタンをクリックしたら要素が削除される", async ({ page }) => {
-    await page.goto("http://localhost:3000");
+  test("要素削除ボタンをクリックしたら要素が削除される", async ({
+    page,
+  }) => {
+    await page.goto("http://localhost:3000/mock/");
     const crateEl = page.locator(crateSelector).first();
     const castEl = page.locator(castSelector).first();
 
@@ -72,7 +82,7 @@ test.describe("Stamperの動作テスト", () => {
     }
 
     const remainingChildren = await crateEl.evaluate(
-      (el) => el.children.length
+      (el) => el.children.length,
     );
 
     expect(remainingChildren).toBe(0);
@@ -80,7 +90,7 @@ test.describe("Stamperの動作テスト", () => {
 
   test("preAddとpostaddが機能している", async ({ page }) => {
     const messageArray: string[] = [];
-    await page.goto("http://localhost:3000");
+    await page.goto("http://localhost:3000/mock/");
     const castEl = page.locator(castSelector).first();
 
     // ダイアログのイベントを監視
@@ -97,7 +107,7 @@ test.describe("Stamperの動作テスト", () => {
     page,
   }) => {
     const messageArray: string[] = [];
-    await page.goto("http://localhost:3000");
+    await page.goto("http://localhost:3000/mock/");
     const crateEl = page.locator(crateSelector).first();
     const castEl = page.locator(castSelector).first();
 
@@ -105,7 +115,7 @@ test.describe("Stamperの動作テスト", () => {
 
     // ダイアログのイベントを監視
     page.on("dialog", async (dialog) => {
-      if(dialog.type() === "alert") {
+      if (dialog.type() === "alert") {
         messageArray.push(dialog.message());
       }
       await dialog.accept();

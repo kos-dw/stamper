@@ -1,21 +1,32 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": ["ESNext", "DOM"],
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
     "module": "ESNext",
     "rootDir": "./src",
     "moduleResolution": "Bundler",
     "baseUrl": ".",
     "paths": {
-      "~/*": ["./src/*"],
-      "root/*": ["./*"]
+      "~/*": [
+        "./src/*"
+      ],
+      "root/*": [
+        "./*"
+      ]
     },
-    "outDir": "./public/js",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src"],
-  "exclude": ["dist", "node_modules"]
+  "include": [
+    "./src"
+  ],
+  "exclude": [
+    "./dist",
+    "./node_modules"
+  ]
 }

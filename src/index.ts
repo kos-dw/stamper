@@ -1,0 +1,1 @@
+export { Stamper } from "~/stamper";
