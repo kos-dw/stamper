@@ -10,7 +10,7 @@ import {
   test,
   vi,
 } from "vitest";
-import { Stamper } from "~/stamper";
+import { Stamper } from "~/Stamper";
 
 // 定数定義
 const HTML_FILEPATH = path.resolve(
@@ -155,14 +155,13 @@ describe("Stamperの動作テスト", () => {
     const stamper = new Stamper({ rootEl });
     stamper.init();
     let indexEls: NodeListOf<HTMLElement>;
-    const modifier = "name";
 
     addBtn.click();
 
     Array.from(crateEl.children).forEach((child, index) => {
-      const indexEls = child.querySelectorAll(`[s-index=${modifier}]`);
+      const indexEls = child.querySelectorAll(`[s-index]`);
       indexEls.forEach((indexEl) => {
-        expect(indexEl.getAttribute(modifier)).toBe(index.toString());
+        expect(indexEl.getAttribute("name")).toBe(index.toString());
       });
     });
   });

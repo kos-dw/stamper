@@ -1,1 +1,1 @@
-export { Stamper } from "~/stamper";
+export { Stamper } from "~/Stamper";
