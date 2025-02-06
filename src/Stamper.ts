@@ -105,18 +105,37 @@ class Stamper {
       const targetAttrKeys = indexEl.getAttribute(
         `${DIRECTIVE_VALUES.index}`,
       );
+
       if (targetAttrKeys) {
-        const targetAttrKeysArray = targetAttrKeys.split(",");
-        targetAttrKeysArray.forEach((targetAttrKey) => {
-          const targetAttrValue = indexEl
-            .getAttribute(targetAttrKey)
-            ?.replace(/{{index}}/gi, this.currentIndex.toString())
-            .replace(
-              /{{index\+\+}}/gi,
+        // indexの置換用正規表現
+        const indexMarkerRegExp = new RegExp(
+          `{{${this.identifier}:index}}`,
+          "gi",
+        );
+        // index++の置換用正規表現
+        const incrementedIndexMarkerRegExp = new RegExp(
+          `{{${this.identifier}:index\\+\\+}}`,
+          "gi",
+        );
+
+        targetAttrKeys.split(",").forEach((targetAttrKey) => {
+          const targetAttrValue = indexEl.getAttribute(targetAttrKey);
+
+          if (targetAttrValue) {
+            let replacedValue;
+
+            // {{identifier:index}}をインデックスに置換
+            replacedValue = targetAttrValue.replace(
+              indexMarkerRegExp,
+              this.currentIndex.toString(),
+            );
+
+            // {{identifier:index++}}をインクリメントされたインデックスに置換
+            replacedValue = replacedValue.replace(
+              incrementedIndexMarkerRegExp,
               (this.currentIndex + 1).toString(),
             );
-          if (targetAttrValue) {
-            indexEl.setAttribute(targetAttrKey, targetAttrValue);
+            indexEl.setAttribute(targetAttrKey, replacedValue);
           }
         });
       }
