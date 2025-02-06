@@ -42,7 +42,7 @@ ${stackLine}`);
   }
 };
 
-// src/stamper.ts
+// src/Stamper.ts
 var Stamper = class {
   rootEl;
   tempEl;
@@ -136,14 +136,27 @@ var Stamper = class {
         `${DIRECTIVE_VALUES.index}`
       );
       if (targetAttrKeys) {
-        const targetAttrKeysArray = targetAttrKeys.split(",");
-        targetAttrKeysArray.forEach((targetAttrKey) => {
-          const targetAttrValue = indexEl.getAttribute(targetAttrKey)?.replace(/{{index}}/gi, this.currentIndex.toString()).replace(
-            /{{index\+\+}}/gi,
-            (this.currentIndex + 1).toString()
-          );
+        const indexMarkerRegExp = new RegExp(
+          `{{${this.identifier}:index}}`,
+          "gi"
+        );
+        const incrementedIndexMarkerRegExp = new RegExp(
+          `{{${this.identifier}:index\\+\\+}}`,
+          "gi"
+        );
+        targetAttrKeys.split(",").forEach((targetAttrKey) => {
+          const targetAttrValue = indexEl.getAttribute(targetAttrKey);
           if (targetAttrValue) {
-            indexEl.setAttribute(targetAttrKey, targetAttrValue);
+            let replacedValue;
+            replacedValue = targetAttrValue.replace(
+              indexMarkerRegExp,
+              this.currentIndex.toString()
+            );
+            replacedValue = replacedValue.replace(
+              incrementedIndexMarkerRegExp,
+              (this.currentIndex + 1).toString()
+            );
+            indexEl.setAttribute(targetAttrKey, replacedValue);
           }
         });
       }

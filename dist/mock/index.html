@@ -22,7 +22,13 @@
       <template s-temp="mock">
         <div class="">
           <div s-sequence="0">連番</div>
-          <div name="{{index}}" s-index="name">タイトル</div>
+          <div
+            name="{{mock:index}}"
+            inc="{{mock:index++}}"
+            s-index="name,inc"
+          >
+            タイトル
+          </div>
           <button
             type="button"
             s-delete="mock"
