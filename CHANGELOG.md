@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/kos-dw/stamper/compare/v1.2.1...v1.2.2) (2025-02-06)
+
+
+### Bug Fixes
+
+* indexの置換処理を改善し、正規表現を使用してインデックスを動的に扱う ([#18](https://github.com/kos-dw/stamper/issues/18)) ([8c46892](https://github.com/kos-dw/stamper/commit/8c468922a13fbafb82fcc2614a966f19e49df1ed))
+
 ## [1.2.1](https://github.com/kos-dw/stamper/compare/v1.2.0...v1.2.1) (2025-01-25)
 
 
