@@ -26,12 +26,7 @@ describe("Stamperの動作テスト", () => {
   let crateEl: HTMLElement;
   let addBtn: HTMLButtonElement;
 
-  // テスト対象のHTMLテキストを取得する
-  const html = fs.readFileSync(HTML_FILEPATH, "utf-8");
-  const dom = new JSDOM(html);
-  const stamperElementText = dom.window.document.body.querySelector(
-    `[stamper=${IDENTIFIER}]`,
-  )?.outerHTML as string;
+
 
   // ポップアップの動作をモック化
   const confirmSpy: MockInstance = vi
@@ -42,6 +37,14 @@ describe("Stamperの動作テスト", () => {
     .mockImplementation(() => vi.fn());
 
   beforeEach(() => {
+
+    // テスト対象のHTMLテキストを取得する
+    const html = fs.readFileSync(HTML_FILEPATH, "utf-8");
+    const dom = new JSDOM(html);
+    const stamperElementText = dom.window.document.body.querySelector(
+      `[stamper=${IDENTIFIER}]`,
+    )?.outerHTML as string;
+
     // テスト対象のHTMLをbodyに追加
     document.body.innerHTML = stamperElementText;
 
@@ -152,16 +155,19 @@ describe("Stamperの動作テスト", () => {
   });
 
   test("[s-index]の対象の属性値の{{index}}が[0]スタートでの連番になっている", () => {
+
     const stamper = new Stamper({ rootEl });
     stamper.init();
-    let indexEls: NodeListOf<HTMLElement>;
 
     addBtn.click();
 
     Array.from(crateEl.children).forEach((child, index) => {
+      
       const indexEls = child.querySelectorAll(`[s-index]`);
       indexEls.forEach((indexEl) => {
-        expect(indexEl.getAttribute("name")).toBe(index.toString());
+        expect(indexEl.getAttribute("normal")).toBe(index.toString());
+        expect(indexEl.getAttribute("increment")).toBe(( index + 1 ).toString());
+        expect(indexEl.getAttribute("x-dropdown-index")).toBe(( index - 1).toString());
       });
     });
   });

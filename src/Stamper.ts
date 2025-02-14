@@ -6,7 +6,6 @@ class Stamper {
   private tempEl: HTMLTemplateElement | null;
   private castEl: HTMLElement | null;
   private crateEl: HTMLElement | null;
-  private currentIndex: number;
   private identifier: string;
   private callback: {
     postinit: (() => void) | null;
@@ -15,6 +14,22 @@ class Stamper {
     predelete: ((...args: any[]) => void) | null;
     postdelete: ((...args: any[]) => void) | null;
   };
+
+  private proxy = new Proxy({
+    currentIndex: 0,
+  }, {
+    get: (object, prop) => {
+      // console.info(`Getting ${String(prop)}`);
+      // console.log(new Error().stack?.split("\n").slice(2).join("\n"));
+      return object[prop as keyof typeof object];
+    },
+    set: (object, prop, value) => {
+      // console.info(`Setting ${String(prop)} to ${value}`);
+      // console.log(new Error().stack?.split("\n").slice(2).join("\n"));
+      object[prop as keyof typeof object] = value;
+      return true;
+    },
+  });
 
   /**
    * Stamperのインスタンスを作成します。
@@ -26,7 +41,6 @@ class Stamper {
     const identifier = rootEl.getAttribute("stamper");
     if (!identifier) throw new StamperError("Missing identifier.");
     this.identifier = identifier;
-    this.currentIndex = 0;
     this.tempEl = null;
     this.castEl = null;
     this.crateEl = null;
@@ -39,6 +53,13 @@ class Stamper {
     };
   }
 
+  get current() {
+    return this.proxy.currentIndex;
+  }
+
+  set current(index: number) {
+     this.proxy.currentIndex = index;
+  }
   /**
    * 提供されたデータでスロットを埋めてアイテムを追加します。
    * @param {Object} data - スロットを埋めるためのデータ。
@@ -72,16 +93,10 @@ class Stamper {
   public init(): void {
     try {
       this.tempEl = this.validateTemplateElement(
-        this.queryElement(DIRECTIVE_VALUES.temp, this.identifier),
+        this.queryElement(DIRECTIVE_VALUES.temp, this.identifier)
       );
-      this.castEl = this.queryElement(
-        DIRECTIVE_VALUES.cast,
-        this.identifier,
-      );
-      this.crateEl = this.queryElement(
-        DIRECTIVE_VALUES.crate,
-        this.identifier,
-      );
+      this.castEl = this.queryElement(DIRECTIVE_VALUES.cast, this.identifier);
+      this.crateEl = this.queryElement(DIRECTIVE_VALUES.crate, this.identifier);
 
       this.initializeCrateElements();
       this.setupClickEvent();
@@ -95,47 +110,63 @@ class Stamper {
   /**
    * フラグメントにインデックスを追加します。
    * @private
-   * @param {DocumentFragment} fragment - インデックスを追加するフラグメント。
+   * @param {HTMLElement} element - インデックスを追加するフラグメント。
    */
-  private addIndex(fragment: DocumentFragment): void {
-    const indexEls = fragment.querySelectorAll(
-      `[${DIRECTIVE_VALUES.index}]`,
-    );
-    indexEls.forEach((indexEl) => {
-      const targetAttrKeys = indexEl.getAttribute(
-        `${DIRECTIVE_VALUES.index}`,
+  private addIndex(element: HTMLElement): void {
+    let indexEls: HTMLElement[] = [];
+
+    // インデックス属性を持つ要素を取得
+    const defaultEls = element.querySelectorAll(`[${DIRECTIVE_VALUES.index}]`);
+    indexEls = [...indexEls, ...(Array.from(defaultEls) as HTMLElement[])];
+
+    // テンプレート要素内のインデックス属性を持つ要素を取得
+    element.querySelectorAll("template").forEach((template: HTMLTemplateElement) => {
+      const elsInTemp = template.content.querySelectorAll(
+        `[${DIRECTIVE_VALUES.index}]`
       );
+      indexEls = [template.content.children[0] as HTMLElement, ...indexEls, ...(Array.from(elsInTemp) as HTMLElement[])];
+    });
+
+    indexEls.forEach((indexEl) => {
+      const targetAttrKeys = indexEl.getAttribute(`${DIRECTIVE_VALUES.index}`);
 
       if (targetAttrKeys) {
-        // indexの置換用正規表現
-        const indexMarkerRegExp = new RegExp(
-          `{{${this.identifier}:index}}`,
-          "gi",
-        );
-        // index++の置換用正規表現
-        const incrementedIndexMarkerRegExp = new RegExp(
-          `{{${this.identifier}:index\\+\\+}}`,
-          "gi",
-        );
 
         targetAttrKeys.split(",").forEach((targetAttrKey) => {
           const targetAttrValue = indexEl.getAttribute(targetAttrKey);
 
           if (targetAttrValue) {
-            let replacedValue;
+            let textValue = targetAttrValue;
+            let newTextValue;
 
-            // {{identifier:index}}をインデックスに置換
-            replacedValue = targetAttrValue.replace(
-              indexMarkerRegExp,
-              this.currentIndex.toString(),
+            // 通常置換
+            newTextValue = textValue.replaceAll(
+              `{{${this.identifier}:index}}`,
+              this.proxy.currentIndex.toString()
             );
+            if(textValue !== newTextValue){
+              textValue = newTextValue;
+            }
+          
+            // 加算置換
+            newTextValue = textValue.replaceAll(
+              `{{${this.identifier}:index++}}`,
+              (this.proxy.currentIndex + 1).toString()
+            );
+            if(textValue !== newTextValue){
+              textValue = newTextValue;
+            }
+            
+            // 減算置換
+            newTextValue = textValue.replaceAll(
+              `{{${this.identifier}:index--}}`,
+              (this.proxy.currentIndex - 1).toString()
+            );
+            if(textValue !== newTextValue){
+              textValue = newTextValue;
+            }
 
-            // {{identifier:index++}}をインクリメントされたインデックスに置換
-            replacedValue = replacedValue.replace(
-              incrementedIndexMarkerRegExp,
-              (this.currentIndex + 1).toString(),
-            );
-            indexEl.setAttribute(targetAttrKey, replacedValue);
+            indexEl.setAttribute(targetAttrKey, textValue);
           }
         });
       }
@@ -149,12 +180,10 @@ class Stamper {
    */
   private addSequenceToElement(element: HTMLElement): void {
     const sequenceEls = element.querySelectorAll(
-      `[${DIRECTIVE_VALUES.sequence}]`,
+      `[${DIRECTIVE_VALUES.sequence}]`
     );
     sequenceEls.forEach((sequenceEl) => {
-      sequenceEl.textContent = this.generateSequence(
-        sequenceEl as HTMLElement,
-      );
+      sequenceEl.textContent = this.generateSequence(sequenceEl as HTMLElement);
     });
   }
 
@@ -165,12 +194,10 @@ class Stamper {
    */
   private addSequenceToFragment(fragment: DocumentFragment): void {
     const sequenceEls = fragment.querySelectorAll(
-      `[${DIRECTIVE_VALUES.sequence}]`,
+      `[${DIRECTIVE_VALUES.sequence}]`
     );
     sequenceEls.forEach((sequenceEl) => {
-      sequenceEl.textContent = this.generateSequence(
-        sequenceEl as HTMLElement,
-      );
+      sequenceEl.textContent = this.generateSequence(sequenceEl as HTMLElement);
     });
   }
 
@@ -180,9 +207,7 @@ class Stamper {
    * @returns {DocumentFragment} 作成されたドキュメントフラグメント。
    */
   private createFragment(): DocumentFragment {
-    const fragment = this.tempEl!.content.cloneNode(
-      true,
-    ) as DocumentFragment;
+    const fragment = this.tempEl!.content.cloneNode(true) as DocumentFragment;
     this.addSequenceToFragment(fragment);
     return fragment;
   }
@@ -195,10 +220,7 @@ class Stamper {
    * @returns {Function} 生成された関数。
    * @throws {StamperError} コードが見つからない場合、または許可されていないパターンが含まれている場合。
    */
-  private createFunction(
-    code: string,
-    params: string[] = [],
-  ): Function {
+  private createFunction(code: string, params: string[] = []): Function {
     if (!code) throw new StamperError("code is not found");
     if (NOT_ALLOWED_PATTERNS.some((pattern) => pattern.test(code)))
       throw new StamperError("Stamper is not work");
@@ -216,10 +238,11 @@ class Stamper {
   private executeCallback(
     callbackCode: string | null,
     child: HTMLElement,
-    event: Event,
+    event: Event
   ): void {
     if (callbackCode) {
       this.createFunction(callbackCode, [
+        "currentIndex",
         "rootEl",
         "tempEl",
         "castEl",
@@ -227,12 +250,13 @@ class Stamper {
         "child",
         "event",
       ])(
+         this.proxy.currentIndex,
         this.rootEl,
         this.tempEl,
         this.castEl,
         this.crateEl,
         child,
-        event,
+        event
       );
     }
   }
@@ -245,16 +269,14 @@ class Stamper {
    * @throws {StamperError} s-sequence属性が見つからない場合。
    */
   private generateSequence(target: HTMLElement): string {
-    const paddingNum = target.getAttribute(
-      `${DIRECTIVE_VALUES.sequence}`,
-    );
+    const paddingNum = target.getAttribute(`${DIRECTIVE_VALUES.sequence}`);
     if (!paddingNum)
       throw new StamperError(
-        `Missing attribute: ${DIRECTIVE_VALUES.sequence}.`,
+        `Missing attribute: ${DIRECTIVE_VALUES.sequence}.`
       );
 
     const digit = (paddingNum.match(/0/g) || []).length;
-    const indexString = (this.currentIndex + 1).toString();
+    const indexString = ( this.proxy.currentIndex + 1).toString();
     return indexString.padStart(digit, "0");
   }
 
@@ -279,7 +301,7 @@ class Stamper {
     if (this.crateEl!.children.length > 0) {
       Array.from(this.crateEl!.children).forEach((child) => {
         this.processChildElement(child as HTMLElement);
-        this.currentIndex++;
+         this.proxy.currentIndex++;
       });
     }
   }
@@ -292,12 +314,10 @@ class Stamper {
    */
   private populateSlots(
     fragment: DocumentFragment,
-    data: { [key: string]: string },
+    data: { [key: string]: string }
   ): void {
     Object.keys(data).forEach((key) => {
-      const slot = fragment.querySelector(
-        `[${DIRECTIVE_VALUES.slot}=${key}]`,
-      );
+      const slot = fragment.querySelector(`[${DIRECTIVE_VALUES.slot}=${key}]`);
       if (slot) slot.textContent = data[key];
     });
   }
@@ -309,7 +329,7 @@ class Stamper {
    */
   private processChildElement(child: HTMLElement): void {
     this.addSequenceToElement(child);
-    this.addIndex(child as unknown as DocumentFragment);
+    this.addIndex(child);
     this.setupDeleteEvent(child);
   }
 
@@ -322,14 +342,13 @@ class Stamper {
    */
   private queryElement(
     directive: string,
-    identifier: string | null,
+    identifier: string | null
   ): HTMLElement {
     if (!identifier) throw new StamperError("Missing identifier.");
     const element = this.rootEl.querySelector(
-      `[${directive}="${identifier}"]`,
+      `[${directive}="${identifier}"]`
     ) as HTMLElement;
-    if (!element)
-      throw new StamperError(`Missing element. [${directive}]`);
+    if (!element) throw new StamperError(`Missing element. [${directive}]`);
     return element;
   }
 
@@ -341,29 +360,27 @@ class Stamper {
   private setupClickEvent(): void {
     if (!this.tempEl || !this.castEl || !this.crateEl) {
       throw new StamperError(
-        `Missing elements. [${DIRECTIVE_VALUES.temp}|${DIRECTIVE_VALUES.cast}|${DIRECTIVE_VALUES.crate}]`,
+        `Missing elements. [${DIRECTIVE_VALUES.temp}|${DIRECTIVE_VALUES.cast}|${DIRECTIVE_VALUES.crate}]`
       );
     }
 
     this.castEl.addEventListener("click", (event) => {
       try {
-        const preadd = this.castEl!.getAttribute(
-          DIRECTIVE_VALUES.preadd,
-        );
-        const postadd = this.castEl!.getAttribute(
-          DIRECTIVE_VALUES.postadd,
-        );
+        const preadd = this.castEl!.getAttribute(DIRECTIVE_VALUES.preadd);
+        const postadd = this.castEl!.getAttribute(DIRECTIVE_VALUES.postadd);
 
         const fragment = this.createFragment();
-        this.addIndex(fragment);
+
         const child = fragment.children[0] as HTMLElement;
 
         this.executeCallback(preadd, child, event);
+        this.addIndex(child);
+
         this.crateEl!.appendChild(fragment);
         this.executeCallback(postadd, child, event);
 
         this.setupDeleteEvent(child);
-        this.currentIndex++;
+         this.proxy.currentIndex++;
       } catch (error) {
         this.handleError(error);
       }
@@ -377,7 +394,7 @@ class Stamper {
    */
   private setupDeleteEvent(child: HTMLElement): void {
     const deleteEl = child.querySelector(
-      `[${DIRECTIVE_VALUES.delete}=${this.identifier}]`,
+      `[${DIRECTIVE_VALUES.delete}=${this.identifier}]`
     );
 
     if (!(deleteEl instanceof HTMLButtonElement)) return;
@@ -386,16 +403,16 @@ class Stamper {
       if (!(event.currentTarget instanceof HTMLButtonElement))
         throw new StamperError("Invalid element.");
       const ariaLabel =
-        event.currentTarget.getAttribute("aria-label") ||
-        "Delete element";
+        event.currentTarget.getAttribute("aria-label") || "Delete element";
       const predelete = event.currentTarget.getAttribute(
-        DIRECTIVE_VALUES.predelete,
+        DIRECTIVE_VALUES.predelete
       );
       const postdelete = event.currentTarget.getAttribute(
-        DIRECTIVE_VALUES.postdelete,
+        DIRECTIVE_VALUES.postdelete
       );
       if (window.confirm(`以下の処理を実行します\n- ${ariaLabel}`)) {
         const keys = [
+          "currentIndex",
           "rootEl",
           "tempEl",
           "castEl",
@@ -404,6 +421,7 @@ class Stamper {
           "event",
         ];
         const values = [
+           this.proxy.currentIndex,
           this.rootEl,
           this.tempEl,
           this.castEl,
@@ -426,8 +444,7 @@ class Stamper {
    * @throws {StamperError} テンプレートまたはキャスト要素が見つからない場合。
    */
   private validateTemplateAndCast(): void {
-    if (!this.tempEl)
-      throw new StamperError("Template element not found.");
+    if (!this.tempEl) throw new StamperError("Template element not found.");
     if (!this.castEl) throw new StamperError("Cast element not found.");
   }
 
@@ -438,17 +455,13 @@ class Stamper {
    * @returns {HTMLTemplateElement} 検証されたテンプレート要素。
    * @throws {StamperError} テンプレート要素が無効な場合。
    */
-  private validateTemplateElement(
-    tempEl: HTMLElement,
-  ): HTMLTemplateElement {
+  private validateTemplateElement(tempEl: HTMLElement): HTMLTemplateElement {
     if (!(tempEl instanceof HTMLTemplateElement)) {
-      throw new StamperError(
-        `${DIRECTIVE_VALUES.temp} is invalid element.`,
-      );
+      throw new StamperError(`${DIRECTIVE_VALUES.temp} is invalid element.`);
     }
     if (tempEl.content.children.length > 1) {
       throw new StamperError(
-        "The template element must have only one child element.",
+        "The template element must have only one child element."
       );
     }
     return tempEl;
