@@ -1,6 +1,6 @@
 {
   "name": "stamper",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Templateタグを利用した要素追加ライブラリ",
   "private": true,
   "main": "src/index.esm.ts",
