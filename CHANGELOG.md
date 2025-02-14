@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/kos-dw/stamper/compare/v1.2.2...v1.2.3) (2025-02-14)
+
+
+### Bug Fixes
+
+* インデックス管理の改善とコードの整理 ([#21](https://github.com/kos-dw/stamper/issues/21)) ([623a417](https://github.com/kos-dw/stamper/commit/623a417de27aa4cc0ee3bbe7498b83617b38abf4))
+
 ## [1.2.2](https://github.com/kos-dw/stamper/compare/v1.2.1...v1.2.2) (2025-02-06)
 
 
