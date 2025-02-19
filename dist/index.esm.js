@@ -1,3 +1,9 @@
+/**
+ * stamper v1.2.3
+ * Bundled by esbuild v0.24.0
+ * Built on: 2025-02-19T00:09:21.886Z
+ */
+
 // src/constants/index.ts
 var DIRECTIVE_VALUES = {
   temp: "s-temp",
