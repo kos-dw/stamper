@@ -9,7 +9,7 @@
     "test:mac": "osascript -e \"tell application \\\"Terminal\\\" to do script \\\"cd '${STAMPER_HOME}' && npm run test:watch\\\"\"",
     "test": "vitest watch src",
     "e2e": "npm run build && playwright test",
-    "build": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.esm.js",
+    "build": "node esbuild.mjs",
     "serve": "serve dist -l 3000",
     "preinstall": "typesync || :",
     "prepare": "husky"
